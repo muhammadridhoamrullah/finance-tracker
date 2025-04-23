@@ -1,0 +1,23 @@
+Link inspo Login & Register : https://dribbble.com/shots/23831405-Signup-ui-Design
+
+Background lOgin : 
+import Link from "next/link"
+
+export default function Home() {
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-r from-purple-600 via-pink-500 to-red-400 flex items-center justify-center p-4">
+      <div className="max-w-md bg-black/20 backdrop-blur-sm rounded-xl p-8 text-white shadow-xl">
+        <h1 className="text-3xl font-bold mb-4">Perpaduan Warna Gradient</h1>
+        <p className="mb-6">
+          Ini adalah contoh perpaduan warna gradient dari ungu ke merah muda ke oranye seperti yang diminta.
+        </p>
+        <Link
+          href="#"
+          className="inline-block bg-white/20 hover:bg-white/30 transition-colors px-6 py-2 rounded-full backdrop-blur-sm"
+        >
+          Lihat Selengkapnya
+        </Link>
+      </div>
+    </div>
+  )
+}
