@@ -57,39 +57,6 @@ Aplikasi **Finance Tracker** menggunakan **relasi One-to-Many** untuk menghubung
 
 ---
 
-### **4. Bill**
-
-**Bill** mencatat tagihan yang harus dibayar oleh pengguna, seperti tagihan listrik, internet, atau cicilan.
-
-#### **Fields**:
-- `billId`: integer, ID unik tagihan (otomatis di-generate)
-- `userId`: integer, ID pengguna yang memiliki tagihan (wajib, foreign key ke **User**)
-- `billName`: string, nama tagihan (misal: "Internet", "Listrik") (wajib)
-- `amount`: integer, jumlah tagihan yang harus dibayar (wajib)
-- `dueDate`: date, tanggal jatuh tempo tagihan (wajib)
-- `category`: string, kategori tagihan (misal: "Utilities", "Cicilan") (wajib)
-
-#### **Relasi**:
-- **User.hasMany(Bill)**: Seorang **User** dapat memiliki banyak **Bill**.
-- **Bill.belongsTo(User)**: Setiap **Bill** hanya dapat terkait dengan satu **User**.
-
----
-
-### **5. Report**
-
-**Report** adalah laporan keuangan yang dihasilkan untuk memberikan gambaran tentang pemasukan, pengeluaran, dan saldo pengguna dalam periode tertentu.
-
-#### **Fields**:
-- `userId`: integer, ID pengguna yang laporan keuangannya dicatat (wajib, foreign key ke **User**)
-- `totalIncome`: integer, total pemasukan dalam periode tertentu (wajib)
-- `totalExpenses`: integer, total pengeluaran dalam periode tertentu (wajib)
-- `balance`: integer, saldo yang tersedia setelah dikurangi pengeluaran (wajib)
-- `categories`: object, rincian pengeluaran menurut kategori (misal: `{"Makanan": 500000, "Transportasi": 200000}`)
-
-#### **Relasi**:
-- **User.hasMany(Report)**: Seorang **User** dapat memiliki banyak **Report**.
-- **Report.belongsTo(User)**: Setiap **Report** hanya dapat terkait dengan satu **User**.
-
 ---
 
 ## **Relasi Antar Model**
@@ -103,13 +70,6 @@ Berikut adalah relasi antar model yang ada dalam aplikasi **Finance Tracker**:
    - **One-to-Many**: Satu **User** memiliki banyak **Budget** untuk mengelola anggaran kategori tertentu.
    - Relasi ini memungkinkan pengguna menetapkan dan melacak anggaran untuk kategori seperti **Makanan**, **Transportasi**, dll.
 
-3. **User** ↔ **Bill**:
-   - **One-to-Many**: Satu **User** memiliki banyak **Bill** (tagihan).
-   - Relasi ini memungkinkan pengguna untuk mengelola dan melacak tagihan mereka (misalnya: **Internet**, **Listrik**, dll).
-
-4. **User** ↔ **Report**:
-   - **One-to-Many**: Satu **User** memiliki banyak **Report** yang menunjukkan ringkasan keuangan berdasarkan **Transaction** dan **Budget**.
-   - Relasi ini memungkinkan pengguna melihat laporan keuangan mereka dalam periode tertentu, menunjukkan pemasukan, pengeluaran, dan saldo mereka.
 
 ---
 
@@ -122,14 +82,7 @@ User.hasMany(Budget, {
   foreignKey: 'userId',
   as: 'budgets'
 });
-User.hasMany(Bill, {
-  foreignKey: 'userId',
-  as: 'bills'
-});
-User.hasMany(Report, {
-  foreignKey: 'userId',
-  as: 'reports'
-});
+
 
 ## Transaction model
 Transaction.belongsTo(User, {
@@ -139,14 +92,6 @@ Transaction.belongsTo(User, {
 Transaction.belongsTo(Budget, {
   foreignKey: 'budgetId',
   as: 'budget'
-});
-Transaction.belongsTo(Bill, {
-  foreignKey: 'billId',
-  as: 'bill'
-});
-Transaction.belongsTo(Report, {
-  foreignKey: 'reportId',
-  as: 'report'
 });
 
 ## Budget model
@@ -159,25 +104,6 @@ Budget.hasMany(Transaction, {
   as: 'transactions'
 });
 
-## Bill model
-Bill.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user'
-});
-Bill.hasMany(Transaction, {
-  foreignKey: 'billId',
-  as: 'transactions'
-});
-
-## Report model
-Report.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user'
-});
-Report.hasMany(Transaction, {
-  foreignKey: 'reportId',
-  as: 'transactions'
-});
 
 
 

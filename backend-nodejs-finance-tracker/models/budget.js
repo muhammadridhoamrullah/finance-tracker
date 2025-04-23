@@ -20,9 +20,10 @@ module.exports = (sequelize, DataTypes) => {
   Budget.init(
     {
       UserId: DataTypes.INTEGER,
-      category: DataTypes.STRING,
+      name: DataTypes.STRING,
       amount: DataTypes.INTEGER,
       spent: DataTypes.INTEGER,
+      income: DataTypes.INTEGER,
       startDate: DataTypes.DATE,
       endDate: DataTypes.DATE,
       remaining: DataTypes.INTEGER,

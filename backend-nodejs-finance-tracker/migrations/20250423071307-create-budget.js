@@ -18,13 +18,16 @@ module.exports = {
         onDelete: "cascade",
         onUpdate: "cascade",
       },
-      category: {
+      name: {
         type: Sequelize.STRING,
       },
       amount: {
         type: Sequelize.INTEGER,
       },
       spent: {
+        type: Sequelize.INTEGER,
+      },
+      income: {
         type: Sequelize.INTEGER,
       },
       startDate: {

@@ -1,0 +1,77 @@
+{
+  "users": [
+    {
+      "UserId": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "password": "1234567890",
+      "phoneNumber": "081234567890",
+      "address": "Jl. Contoh No. 123, Jakarta"
+    },
+    {
+      "UserId": 2,
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "email": "jane.smith@example.com",
+      "password": "1234567890",
+      "phoneNumber": "081298765432",
+      "address": "Jl. Mawar No. 45, Bandung"
+    }
+  ],
+  "transactions": [
+    {
+      "TransactionId": 1,
+      "UserId": 1,
+      "BudgetId": 1,
+      "amount": 50000,
+      "category": "Makanan",
+      "type": "expense",
+      "date": "2024-01-05",
+      "description": "Makan siang"
+    },
+    {
+      "TransactionId": 2,
+      "UserId": 1,
+      "BudgetId": 1,
+      "amount": 40000,
+      "category": "Transportasi",
+      "type": "expense",
+      "date": "2024-01-07",
+      "description": "Naik ojek online"
+    },
+    {
+      "TransactionId": 3,
+      "UserId": 2,
+      "BudgetId": 1,
+      "amount": 60000,
+      "category": "Belanja",
+      "type": "expense",
+      "date": "2024-01-08",
+      "description": "Belanja kebutuhan rumah"
+    },
+    {
+      "TransactionId": 4,
+      "UserId": 2,
+      "BudgetId": 1,
+      "amount": 150000,
+      "category": "Makanan",
+      "type": "income",
+      "date": "2024-01-10",
+      "description": "Uang makan dari kantor"
+    }
+  ],
+  "budgets": [
+    {
+      "BudgetId": 1,
+      "UserId": 1,
+      "name": "Januari",
+      "amount": 300000,
+      "income": 150000,
+      "spent": 150000,
+      "remaining": 300000,
+      "startDate": "2024-01-01",
+      "endDate": "2024-01-31"
+    }
+  ]
+}
