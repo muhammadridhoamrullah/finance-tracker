@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "amount": 150000,
+    "category": "Food",
+    "type": "expense",
+    "date": "2023-10-15T08:30:00Z",
+    "description": "Lunch at restaurant",
+    "UserId": 1,
+    "BudgetId": 1
+  }
+]

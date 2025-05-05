@@ -22,13 +22,13 @@ module.exports = {
         type: Sequelize.STRING,
       },
       amount: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.FLOAT,
       },
       spent: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.FLOAT,
       },
       income: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.FLOAT,
       },
       startDate: {
         type: Sequelize.DATE,
@@ -37,7 +37,7 @@ module.exports = {
         type: Sequelize.DATE,
       },
       remaining: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.FLOAT,
       },
       createdAt: {
         allowNull: false,

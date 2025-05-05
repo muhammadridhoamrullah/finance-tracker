@@ -19,14 +19,78 @@ module.exports = (sequelize, DataTypes) => {
   }
   Budget.init(
     {
-      UserId: DataTypes.INTEGER,
-      name: DataTypes.STRING,
-      amount: DataTypes.INTEGER,
-      spent: DataTypes.INTEGER,
-      income: DataTypes.INTEGER,
-      startDate: DataTypes.DATE,
-      endDate: DataTypes.DATE,
-      remaining: DataTypes.INTEGER,
+      UserId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "UserId is required",
+          },
+          notEmpty: {
+            msg: "UserId is required",
+          },
+        },
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Name is required",
+          },
+          notEmpty: {
+            msg: "Name is required",
+          },
+        },
+      },
+      amount: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Amount is required",
+          },
+          notEmpty: {
+            msg: "Amount is required",
+          },
+        },
+      },
+      spent: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
+      },
+      income: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
+      },
+      startDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Start Date is required",
+          },
+          notEmpty: {
+            msg: "Start Date is required",
+          },
+        },
+      },
+      endDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "End Date is required",
+          },
+          notEmpty: {
+            msg: "End Date is required",
+          },
+        },
+      },
+      remaining: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
+      },
     },
     {
       sequelize,
