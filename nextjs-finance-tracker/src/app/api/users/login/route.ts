@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const validateData = schemaLogin.safeParse(data);
 
     if (!validateData.success) {
-      throw validateData.error;
+      throw new z.ZodError(validateData.error.issues);
     }
 
     const access_token = await loginUser(data);
@@ -28,22 +28,24 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: 400,
-        }
-      );
-    } else if (error instanceof z.ZodError) {
+    if (error instanceof z.ZodError) {
+      console.log(error, "ini error zod API");
+
       const path = error.issues[0].path[0];
       const message = error.issues[0].message;
 
       return NextResponse.json(
         {
           message: `Invalid on path: ${path}, error message: ${message}`,
+        },
+        {
+          status: 400,
+        }
+      );
+    } else if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          message: error.message,
         },
         {
           status: 400,
