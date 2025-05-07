@@ -4,7 +4,7 @@ import { EyeOff, EyeIcon } from "lucide-react";
 import instance from "../axiosInstance";
 import Swal from "sweetalert2";
 
-export default function Register() {
+export default function Login() {
   const navigate = useNavigate();
   const [hidePassword, setHidePassword] = useState(false);
   const [formLogin, setFormLogin] = useState({
@@ -64,30 +64,6 @@ export default function Register() {
             onSubmit={submitHandler}
             className="flex flex-col gap-3 w-[300px] "
           >
-            <div className="flex gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold">First Name</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  id="firstName"
-                  onChange={changeHandler}
-                  value={formLogin.firstName}
-                  className="w-36 h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold">Last Name</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  id="lastName"
-                  onChange={changeHandler}
-                  value={formLogin.lastName}
-                  className="w-36 h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold">Email</label>
               <input
@@ -119,28 +95,7 @@ export default function Register() {
                 </button>
               </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold">Phone Number</label>
-              <input
-                type="text"
-                name="phoneNumber"
-                id="phoneNumber"
-                onChange={changeHandler}
-                value={formLogin.phoneNumber}
-                className="w-full h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold">Address</label>
-              <input
-                type="text"
-                name="address"
-                id="address"
-                onChange={changeHandler}
-                value={formLogin.address}
-                className="w-full h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
-              />
-            </div>
+
             <button
               type="submit"
               className="bg-blue-900 h-10 rounded-lg hover:bg-blue-700 cursor-pointer"
@@ -166,13 +121,3 @@ export default function Register() {
     </div>
   );
 }
-
-// {
-//   "UserId": 1,
-//   "firstName": "John",
-//   "lastName": "Doe",
-//   "email": "john.doe@example.com",
-//   "password": "1234567890",
-//   "phoneNumber": "081234567890",
-//   "address": "Jl. Contoh No. 123, Jakarta"
-//   },
