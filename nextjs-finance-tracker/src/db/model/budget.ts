@@ -1,10 +1,11 @@
+import { ObjectId } from "mongodb";
 import { GetDB } from "../config";
 import { BudgetModel } from "../type/type";
 
 const COLLECTION_NAME = "budgets";
 type InputModelBudget = Pick<
   BudgetModel,
-  "name" | "amount" | "startDate" | "endDate"
+  "name" | "amount" | "startDate" | "endDate" | "UserId"
 >;
 
 export async function createBudget(input: InputModelBudget) {
@@ -20,4 +21,18 @@ export async function createBudget(input: InputModelBudget) {
   });
 
   return createNewBudget;
+}
+
+export async function getMyBudgets(UserId: string) {
+  const db = await GetDB();
+
+  const budgets = await db
+    .collection(COLLECTION_NAME)
+    .find({
+      UserId: new ObjectId(UserId),
+    })
+    .sort({ createdAt: 1 })
+    .toArray();
+
+  return budgets;
 }

@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
       throw new Error("Authorization token not found");
     }
 
-    let token = cookiesAuth.value;
+    let token = cookiesAuth.value.split(" ")[1];
 
     console.log(token, "ini token middleware");
 
@@ -65,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/budgets/createBudget",
+  matcher: ["/api/budgets/createBudget", "/api/transactions"],
 };

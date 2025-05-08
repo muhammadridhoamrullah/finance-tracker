@@ -10,12 +10,20 @@ const COLLECTION_NAME = "users";
 export async function createUser(user: UserModelInput) {
   const db = await GetDB();
 
-  const checkUser = await db.collection(COLLECTION_NAME).findOne({
+  const checkUser = (await db.collection(COLLECTION_NAME).findOne({
     email: user.email,
-  });
+  })) as UserModel | null;
 
   if (checkUser) {
-    throw new Error("User already exists");
+    throw new Error("Email already exists");
+  }
+
+  const checkPhoneNumber = await db.collection(COLLECTION_NAME).findOne({
+    phoneNumber: user.phoneNumber,
+  });
+
+  if (checkPhoneNumber) {
+    throw new Error("Phone number already exists");
   }
 
   const newUser = {

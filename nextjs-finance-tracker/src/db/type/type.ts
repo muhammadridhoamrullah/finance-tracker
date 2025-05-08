@@ -23,4 +23,17 @@ export interface BudgetModel {
   updatedAt: Date;
 }
 
+export interface TransactionModel {
+  _id: string;
+  amount: number;
+  category: string;
+  type: "income" | "expense";
+  date: Date;
+  description: string;
+  UserId: string;
+  BudgetId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 
