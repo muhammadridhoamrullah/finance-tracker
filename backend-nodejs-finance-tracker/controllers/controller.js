@@ -73,6 +73,8 @@ class Controller {
     }
   }
 
+  // Awal Budget
+
   static async createBudget(req, res, next) {
     try {
       const { name, amount, startDate, endDate } = req.body;
@@ -119,7 +121,7 @@ class Controller {
         ],
       });
 
-      if (budgets.length === 0) {
+      if (budgets === null) {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
@@ -130,6 +132,114 @@ class Controller {
       next(error);
     }
   }
+
+  static async getMyBudgetById(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { id } = req.params;
+
+      const findBudgetById = await Budget.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        include: [
+          {
+            model: Transaction,
+          },
+        ],
+      });
+
+      if (findBudgetById === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      res.status(200).json({
+        findBudgetById,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateMyBudget(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { id } = req.params;
+
+      const { name, amount, startDate, endDate } = req.body;
+
+      const findBudgetById = await Budget.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        include: [
+          {
+            model: Transaction,
+          },
+        ],
+      });
+
+      if (findBudgetById.Transactions.length > 0) {
+        throw { name: "BUDGET_CANT_BE_UPDATED" };
+      }
+
+      if (findBudgetById === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      // Cek jika startDate lebih besar dari endDate
+      if (new Date(startDate) > new Date(endDate)) {
+        throw { name: "STARTDATE_INVALID" };
+      }
+
+      // Cek jika startDate lebih besar dari endDate di data yang sudah ada
+      if (new Date(startDate) > new Date(findBudgetById.endDate)) {
+        throw { name: "STARTDATE_INVALID" };
+      }
+
+      // Cek jika endDate lebih kecil dari startDate
+      if (new Date(endDate) < new Date(startDate)) {
+        throw { name: "ENDDATE_INVALID" };
+      }
+
+      // Cek jika endDate lebih kecil dari startDate di data yang sudah ada
+      if (new Date(endDate) < new Date(findBudgetById.startDate)) {
+        throw { name: "ENDDATE_INVALID" };
+      }
+
+      const updateBudget = await Budget.update(
+        {
+          name,
+          amount,
+          startDate,
+          endDate,
+        },
+        {
+          where: {
+            id,
+            UserId,
+          },
+        }
+      );
+
+      if (updateBudget[0] === 0) {
+        throw { name: "ERROR_UPDATE_BUDGET" };
+      }
+
+      res.status(200).json({
+        message: "Budget Updated Successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  // Akhir Budget
+
+  // Awal Transaction
 
   static async createTransaction(req, res, next) {
     try {
@@ -169,13 +279,13 @@ class Controller {
 
       if (type === "income") {
         await budget.update({
-          remaining: budget.remaining + amount,
-          income: budget.income + amount,
+          remaining: Number(budget.remaining) + Number(amount),
+          income: Number(budget.income) + Number(amount),
         });
       } else if (type === "expense") {
         await budget.update({
-          remaining: budget.remaining - amount,
-          spent: budget.spent + amount,
+          remaining: Number(budget.remaining) - Number(amount),
+          spent: Number(budget.spent) + Number(amount),
         });
       }
 
@@ -188,6 +298,65 @@ class Controller {
       next(error);
     }
   }
+
+  static async getMyTransaction(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const myTransaction = await Transaction.findAll({
+        where: {
+          UserId,
+        },
+        include: [
+          {
+            model: Budget,
+          },
+        ],
+      });
+
+      if (myTransaction === null) {
+        throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      res.status(200).json({
+        myTransaction,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMyTransactionById(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { id } = req.params;
+
+      const findMyTransactionById = await Transaction.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        include: [
+          {
+            model: Budget,
+          },
+        ],
+      });
+
+      if (findMyTransactionById === null) {
+        throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      res.status(200).json({
+        findMyTransactionById,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Akhir Transaction
 }
 
 module.exports = {

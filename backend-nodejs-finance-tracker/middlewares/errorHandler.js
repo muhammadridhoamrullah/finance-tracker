@@ -35,11 +35,28 @@ async function errorHandling(err, req, res, next) {
   } else if (err.name === "BUDGET_NOT_ENOUGH") {
     res.status(400).json({ message: "Budget not enough" });
   } else if (err.name === "TRANSACTION_DATE_INVALID") {
+    res.status(400).json({
+      message:
+        "Transaction date must be greater than Budget Start Date and Lower than Budget End Date",
+    });
+  } else if (err.name === "TRANSACTION_NOT_FOUND") {
+    res.status(404).json({ message: "Transaction not found" });
+  } else if (err.name === "STARTDATE_INVALID") {
+    res
+      .status(400)
+      .json({ message: "Start Date must should be less than End Date" });
+  } else if (err.name === "ENDDATE_INVALID") {
+    res
+      .status(400)
+      .json({ message: "End Date must should be greater than Start Date" });
+  } else if (err.name === "ERROR_UPDATE_BUDGET") {
+    res.status(404).json({ message: "Error update budget" });
+  } else if (err.name === "BUDGET_CANT_BE_UPDATED") {
     res
       .status(400)
       .json({
         message:
-          "Transaction date must be greater than Budget Start Date and Lower than Budget End Date",
+          "Budget can't be updated because of there is already transaction in this budget",
       });
   }
 }
