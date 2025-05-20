@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
     console.log("Masuk middleware");
 
     const cookiesAuth = (await cookies()).get("Authorization");
-    console.log(cookiesAuth, "ini cookiesAuth middleware");
+    // console.log(cookiesAuth, "ini cookiesAuth middleware");
 
     if (!cookiesAuth) {
       throw new Error("Authorization token not found");
@@ -20,18 +20,18 @@ export async function middleware(request: NextRequest) {
 
     const secret = new TextEncoder().encode(process.env.SECRET!);
 
-    console.log(secret, "ini secret middleware");
+    // console.log(secret, "ini secret middleware");
 
     const decoded = await jose.jwtVerify<{
       _id: string;
       username: string;
     }>(token, secret);
 
-    console.log(decoded, "ini decoded middleware");
+    // console.log(decoded, "ini decoded middleware");
 
     const reqHeaders = new Headers(request.headers);
 
-    console.log(reqHeaders, "ini reqHeaders middleware");
+    // console.log(reqHeaders, "ini reqHeaders middleware");
 
     reqHeaders.set("x-user-id", decoded.payload._id);
     reqHeaders.set("x-username", decoded.payload.username);
@@ -65,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/budgets/createBudget", "/api/transactions"],
+  matcher: ["/api/budgets", "/api/transactions"],
 };

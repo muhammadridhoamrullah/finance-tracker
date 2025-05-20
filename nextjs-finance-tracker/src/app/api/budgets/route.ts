@@ -4,18 +4,6 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-// {
-//   "id": 1,
-//   "UserId": 1,
-//   "name": "January",
-//   "amount": 5000000,
-//   "spent": 150000,
-//   "income": 0,
-//   "startDate": "2023-11-01T00:00:00Z",
-//   "endDate": "2023-11-30T23:59:59Z",
-//   "remaining": 4850000
-// }
-
 const schemaCreateBudget = z.object({
   name: z.string(),
   amount: z.number(),
@@ -94,7 +82,7 @@ export async function GET(request: NextRequest) {
 
     const budget = await getMyBudgets(UserId!);
 
-    if (!budget || budget.length === 0) {
+    if (budget.length === 0) {
       throw new Error("Budgets not found");
     }
 

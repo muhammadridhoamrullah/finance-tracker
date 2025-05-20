@@ -1,4 +1,4 @@
-import { createTransaction } from "@/db/model/transaction";
+import { createTransaction, getMyTransactions } from "@/db/model/transaction";
 import { ObjectId } from "mongodb";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -55,6 +55,46 @@ export async function POST(request: NextRequest) {
         }
       );
     } else if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          message: "Internal Server Error",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const headerList = headers();
+
+    const UserId = (await headerList).get("x-user-id");
+
+    const findTransactions = await getMyTransactions(UserId!);
+
+    return NextResponse.json(
+      {
+        message: "Successfully get transaction",
+        data: findTransactions,
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
       return NextResponse.json(
         {
           message: error.message,

@@ -41,31 +41,45 @@ export async function createTransaction(input: InputTransactionModel) {
     updatedAt: new Date(),
   });
 
-  if (input.type === "income") {
-    await db.collection("budgets").updateMany(
+  if (input.type === "expense") {
+    await db.collection("budgets").updateOne(
       {
         _id: new ObjectId(input.BudgetId),
       },
       {
-        $inc: {
-          income: findBudget.income + input.amount,
-          remaining: findBudget.remaining + input.amount,
+        $set: {
+          remaining: Number(findBudget.remaining) - Number(input.amount),
+          spent: Number(findBudget.spent) + Number(input.amount),
         },
       }
     );
-  } else if (input.type === "expense") {
-    await db.collection("budgets").updateMany(
+  } else if (input.type === "income") {
+    await db.collection("budgets").updateOne(
       {
         _id: new ObjectId(input.BudgetId),
       },
       {
-        $inc: {
-          spent: findBudget.spent + input.amount,
-          remaining: findBudget.remaining - input.amount,
+        $set: {
+          remaining: Number(findBudget.remaining) + Number(input.amount),
+          income: Number(findBudget.income) + Number(input.amount),
         },
       }
     );
   }
 
   return createNewTransaction;
+}
+
+export async function getMyTransactions(UserId: string) {
+  const db = await GetDB();
+
+  const findMyTransactions = await db
+    .collection(COLLECTION_NAME)
+    .find({
+      UserId: new ObjectId(UserId),
+    })
+    .sort({ createdAt: 1 })
+    .toArray();
+
+  return findMyTransactions;
 }
