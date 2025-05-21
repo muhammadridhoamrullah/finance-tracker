@@ -1,3 +1,4 @@
+const e = require("express");
 const { comparePassword } = require("../helpers/bcrypt");
 const { SignToken } = require("../helpers/jwt");
 const { User, Budget, Transaction } = require("../models/index");
@@ -217,6 +218,8 @@ class Controller {
           amount,
           startDate,
           endDate,
+          remaining: amount,
+          updatedAt: new Date(),
         },
         {
           where: {
@@ -356,9 +359,187 @@ class Controller {
     }
   }
 
+  static async updateMyTransaction(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { id } = req.params;
+
+      const { amount, category, type, date, description } = req.body;
+
+      const findMyTransactionById = await Transaction.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        include: [
+          {
+            model: Budget,
+          },
+        ],
+      });
+
+      // Cek jika transaction tidak ditemukan
+      if (findMyTransactionById === null) {
+        throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      // // Cek jika angka yang diinput lebih besar dari pada sisa budget
+      // if (amount > findMyTransactionById.Budget.remaining) {
+      //   throw { name: "BUDGET_NOT_ENOUGH" };
+      // }
+
+      // Cek jika tanggal yang diinput lebih kecil dari pada tanggal Start Date Budget
+      if (new Date(date) < new Date(findMyTransactionById.Budget.startDate)) {
+        throw { name: "UPDATE_DATE_TRANSACTION_LESSER" };
+      }
+
+      // Cek jika tanggal yang diinput lebih besar dari pada tanggal End Date Budget
+      if (new Date(date) > new Date(findMyTransactionById.Budget.endDate)) {
+        throw { name: "UPDATE_DATE_TRANSACTION_GREATER" };
+      }
+
+      // Cek jika transaksi type expense
+      if (findMyTransactionById.type === "expense") {
+        if (amount > findMyTransactionById.Budget.remaining) {
+          throw { name: "BUDGET_NOT_ENOUGH" };
+        }
+      }
+
+      // Update Transaction
+      const updateTransaction = await Transaction.update(
+        {
+          amount,
+          category,
+          type,
+          date,
+          description,
+        },
+        {
+          where: {
+            id,
+            UserId,
+          },
+        }
+      );
+
+      // Cek jika ada gagal
+
+      if (updateTransaction[0] === 0) {
+        throw { name: "ERROR_UPDATE_TRANSACTION" };
+      }
+
+      // Update Budget
+      const budget = await Budget.findByPk(findMyTransactionById.BudgetId);
+      // console.log(budget, "<<< budget <<<");
+
+      // Cek jika budget tidak ditemukan
+      if (budget === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      // Expense
+      const remainingExpense =
+        Number(budget.remaining) + Number(findMyTransactionById.amount);
+      const spentExpense =
+        Number(budget.spent) - Number(findMyTransactionById.amount);
+
+      // Income
+      const remainingIncome =
+        Number(budget.remaining) - Number(findMyTransactionById.amount);
+      const incomeIncome =
+        Number(budget.income) - Number(findMyTransactionById.amount);
+
+      // Cek type yang diinput
+      if (findMyTransactionById.type === "income") {
+        await budget.update({
+          remaining: Number(remainingIncome) + Number(amount),
+          income: Number(incomeIncome) + Number(amount),
+        });
+      } else if (findMyTransactionById.type === "expense") {
+        await budget.update({
+          remaining: Number(remainingExpense) - Number(amount),
+          spent: Number(spentExpense) + Number(amount),
+        });
+      }
+
+      res.status(200).json({
+        message: "Transaction Updated Successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Akhir Transaction
 }
 
 module.exports = {
   Controller,
 };
+
+// Budget Mei
+
+// {
+//   "findBudgetById": {
+//     "id": 9,
+//     "UserId": 5,
+//     "name": "May",
+//     "amount": 5000000,
+//     "spent": 50000,
+//     "income": 0,
+//     "startDate": "2025-05-01T00:00:00.000Z",
+//     "endDate": "2025-05-31T00:00:00.000Z",
+//     "remaining": 4950000,
+//     "createdAt": "2025-05-21T07:56:28.926Z",
+//     "updatedAt": "2025-05-21T07:57:03.695Z",
+//     "Transactions": [
+//       {
+//         "id": 21,
+//         "amount": 50000,
+//         "category": "Food",
+//         "type": "expense",
+//         "date": "2025-05-03T00:00:00.000Z",
+//         "description": "KFC",
+//         "UserId": 5,
+//         "BudgetId": 9,
+//         "createdAt": "2025-05-21T07:57:03.685Z",
+//         "updatedAt": "2025-05-21T07:57:03.685Z"
+//       }
+//     ]
+//   }
+// }
+
+// Salah satu transaksi di budget Mei
+
+// {
+//   "findMyTransactionById": {
+//     "id": 21,
+//     "amount": 50000,
+//     "category": "Food",
+//     "type": "expense",
+//     "date": "2025-05-03T00:00:00.000Z",
+//     "description": "KFC",
+//     "UserId": 5,
+//     "BudgetId": 9,
+//     "createdAt": "2025-05-21T07:57:03.685Z",
+//     "updatedAt": "2025-05-21T07:57:03.685Z",
+//     "Budget": {
+//       "id": 9,
+//       "UserId": 5,
+//       "name": "May",
+//       "amount": 5000000,
+//       "spent": 50000,
+//       "income": 0,
+//       "startDate": "2025-05-01T00:00:00.000Z",
+//       "endDate": "2025-05-31T00:00:00.000Z",
+//       "remaining": 4950000,
+//       "createdAt": "2025-05-21T07:56:28.926Z",
+//       "updatedAt": "2025-05-21T07:57:03.695Z"
+//     }
+//   }
+// }
+
+// Saya mau update transaksi di atas dengan amount 55000
+// Berarti budget.remaining = 4950000 + 50000 - 55000, = 4945000
+// budget.spent = 50000 - - 50000 + 55000 = 55000

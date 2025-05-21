@@ -52,12 +52,20 @@ async function errorHandling(err, req, res, next) {
   } else if (err.name === "ERROR_UPDATE_BUDGET") {
     res.status(404).json({ message: "Error update budget" });
   } else if (err.name === "BUDGET_CANT_BE_UPDATED") {
+    res.status(400).json({
+      message:
+        "Budget can't be updated because of there is already transaction in this budget",
+    });
+  } else if (err.name === "UPDATE_DATE_TRANSACTION_LESSER") {
     res
       .status(400)
-      .json({
-        message:
-          "Budget can't be updated because of there is already transaction in this budget",
-      });
+      .json({ message: "Date is can't lesser than Start Date on Budget" });
+  } else if (err.name === "UPDATE_DATE_TRANSACTION_GREATER") {
+    res
+      .status(400)
+      .json({ message: "Date is can't greater than End Date on Budget" });
+  } else if (err.name === "ERROR_UPDATE_TRANSACTION") {
+    res.status(404).json({ message: "Error update transaction" });
   }
 }
 

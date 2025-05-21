@@ -20,6 +20,7 @@ router.put("/budget/:id", Controller.updateMyBudget);
 router.post("/transaction", Controller.createTransaction);
 router.get("/transaction", Controller.getMyTransaction);
 router.get("/transaction/:id", Controller.getMyTransactionById);
+router.put("/transaction/:id", Controller.updateMyTransaction);
 
 router.use(errorHandling);
 
