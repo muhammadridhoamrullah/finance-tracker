@@ -8,12 +8,8 @@ export default function Login() {
   const navigate = useNavigate();
   const [hidePassword, setHidePassword] = useState(false);
   const [formLogin, setFormLogin] = useState({
-    firstName: "",
-    lastName: "",
     email: "",
     password: "",
-    phoneNumber: "",
-    address: "",
   });
 
   function changeHandler(e) {
@@ -28,15 +24,11 @@ export default function Login() {
   async function submitHandler(e) {
     e.preventDefault();
     try {
-      const response = await instance.post("/register", formLogin);
+      const response = await instance.post("/login", formLogin);
 
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Registration successful!",
-      });
+      localStorage.access_token = response.data.access_token;
 
-      navigate("/login");
+      navigate("/home");
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -53,7 +45,8 @@ export default function Login() {
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-black">
       <div className="w-[900px] h-[500px] bg-white/10 rounded-lg flex justify-center items-center overflow-hidden text-white">
-        <div className="w-1/2 h-full flex flex-col justify-between items-start pl-20 gap-3 py-5">
+        {/* Awal Form */}
+        <div className="w-1/2 h-full flex flex-col justify-center items-start pl-20 gap-3 py-5">
           <div className="flex flex-col">
             {/* <div className="text-3xl font-bold">Register Please</div> */}
             <div className="text-xs font-bold">
@@ -110,6 +103,9 @@ export default function Login() {
             </div>
           </form>
         </div>
+        {/* Akhir Form */}
+
+        {/* Awal Gambar */}
         <div className=" w-1/2 h-full relative">
           <img
             src={"/register.jpg"}
@@ -117,6 +113,7 @@ export default function Login() {
             className="w-full h-full absolute object-cover rounded-l-4xl"
           />
         </div>
+        {/* Akhir Gambar */}
       </div>
     </div>
   );
