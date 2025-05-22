@@ -9,6 +9,11 @@ type InputModelBudget = Pick<
   "name" | "amount" | "startDate" | "endDate" | "UserId"
 >;
 
+type inputEditBudget = Pick<
+  BudgetModel,
+  "name" | "amount" | "startDate" | "endDate"
+>;
+
 // createBudget
 export async function createBudget(input: InputModelBudget) {
   const db = await GetDB();
@@ -53,4 +58,30 @@ export async function getMyBudgetById(BudgetId: string, UserId: string) {
 }
 
 // updateMyBudget
+
+export async function updateMyBudget(
+  BudgetId: string,
+  input: inputEditBudget,
+  UserId: string
+) {
+  const db = await GetDB();
+
+  const updateMyBudget = await db.collection(COLLECTION_NAME).updateOne(
+    {
+      _id: new ObjectId(BudgetId),
+      UserId: new ObjectId(UserId),
+    },
+    {
+      $set: {
+        ...input,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  
+
+  return updateMyBudget;
+}
+
 // deleteMyBudget

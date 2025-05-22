@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-const schemaCreateBudget = z.object({
+export const schemaCreateBudget = z.object({
   name: z.string(),
   amount: z.number(),
   startDate: z.string().transform((date) => new Date(date)),
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     };
 
     const creatingBudget = await createBudget(makeBudget);
+    
 
     return NextResponse.json(
       {
