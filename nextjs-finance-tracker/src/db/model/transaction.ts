@@ -7,7 +7,7 @@ type InputTransactionModel = Omit<
   TransactionModel,
   "_id" | "createdAt" | "updatedAt"
 >;
-
+// createTransaction
 export async function createTransaction(input: InputTransactionModel) {
   const db = await GetDB();
 
@@ -70,6 +70,7 @@ export async function createTransaction(input: InputTransactionModel) {
   return createNewTransaction;
 }
 
+// getMyTransactions
 export async function getMyTransactions(UserId: string) {
   const db = await GetDB();
 
@@ -83,3 +84,21 @@ export async function getMyTransactions(UserId: string) {
 
   return findMyTransactions;
 }
+
+// getMyTransactionById
+export async function getMyTransactionById(
+  TransactionId: string,
+  UserId: string
+) {
+  const db = await GetDB();
+
+  const findMyTransaction = await db.collection(COLLECTION_NAME).findOne({
+    _id: new ObjectId(TransactionId),
+    UserId: new ObjectId(UserId),
+  });
+
+  return findMyTransaction;
+}
+
+// updateMyTransaction
+// deleteMyTransaction

@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { GetDB } from "../config";
 import { BudgetModel } from "../type/type";
+import { log } from "console";
 
 const COLLECTION_NAME = "budgets";
 type InputModelBudget = Pick<
@@ -8,6 +9,7 @@ type InputModelBudget = Pick<
   "name" | "amount" | "startDate" | "endDate" | "UserId"
 >;
 
+// createBudget
 export async function createBudget(input: InputModelBudget) {
   const db = await GetDB();
 
@@ -23,6 +25,7 @@ export async function createBudget(input: InputModelBudget) {
   return createNewBudget;
 }
 
+// getMyBudgets
 export async function getMyBudgets(UserId: string) {
   const db = await GetDB();
 
@@ -36,3 +39,18 @@ export async function getMyBudgets(UserId: string) {
 
   return budgets;
 }
+
+// getMyBudgetById
+export async function getMyBudgetById(BudgetId: string, UserId: string) {
+  const db = await GetDB();
+
+  const findMyBudget = await db.collection(COLLECTION_NAME).findOne({
+    _id: new ObjectId(BudgetId),
+    UserId: new ObjectId(UserId),
+  });
+
+  return findMyBudget;
+}
+
+// updateMyBudget
+// deleteMyBudget

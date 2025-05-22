@@ -25,9 +25,13 @@ export async function POST(request: NextRequest) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
+    if (!UserId) {
+      throw new Error("UserId not found");
+    }
+
     const makeTransaction = {
       ...data,
-      UserId: new ObjectId(UserId!),
+      UserId: new ObjectId(UserId),
       BudgetId: new ObjectId(data.BudgetId),
     };
 
@@ -83,6 +87,10 @@ export async function GET(request: NextRequest) {
     const UserId = (await headerList).get("x-user-id");
 
     const findTransactions = await getMyTransactions(UserId!);
+
+    if (findTransactions.length === 0) {
+      throw new Error("There is no transaction");
+    }
 
     return NextResponse.json(
       {
