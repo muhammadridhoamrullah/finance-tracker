@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { date, z } from "zod";
 
-const schemaCreateTransaction = z.object({
+export const schemaCreateTransaction = z.object({
   amount: z.number().min(1),
   category: z.string(),
   type: z.enum(["income", "expense"]),

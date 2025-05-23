@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { schemaCreateBudget } from "../route";
 import { z } from "zod";
 import { inflateSync } from "zlib";
+import { BudgetModel } from "@/db/type/type";
 
 // interface BudgetParams {
 //   params: {
@@ -96,7 +97,10 @@ export async function PUT(request: NextRequest) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
-    const findBudget = await getMyBudgetById(BudgetId, UserId);
+    const findBudget = (await getMyBudgetById(
+      BudgetId,
+      UserId
+    )) as BudgetModel | null;
     console.log(findBudget, "TES");
 
     if (!findBudget) {
@@ -125,12 +129,32 @@ export async function PUT(request: NextRequest) {
     //   );
     // }
 
+    // Sementara ini dulu
+    if (findBudget.income > 0 || findBudget.spent > 0) {
+      throw new Error(
+        "Can't edit because this budget already has transactions"
+      );
+    }
+
     // Cek jika startDate lebih besar dari endDate
     if (data.startDate > data.endDate) {
       throw new Error("Start date must be less than end date");
     }
 
     // Cek jika startDate lebih besar dari endDate di data yang sudah ada
+    if (data.startDate > findBudget.endDate) {
+      throw new Error("Start date must be less than end date");
+    }
+
+    // Cek jika endDate lebih kecil dari startDate
+    if (data.endDate < data.startDate) {
+      throw new Error("End date must be greater than start date");
+    }
+
+    // Cek jika endDate lebih kecil dari startDate di data yang sudah ada
+    if (data.endDate < findBudget.startDate) {
+      throw new Error("End date must be greater than start date");
+    }
 
     const editBudget = await updateMyBudget(BudgetId, data, UserId);
 
