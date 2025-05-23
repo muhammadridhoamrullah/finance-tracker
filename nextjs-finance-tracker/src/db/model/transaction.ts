@@ -149,8 +149,11 @@ export async function getMyTransactionById(
 export async function updateMyTransaction(
   TransactionId: string,
   input: InputEditTransaction,
-  UserId: string
+  UserId: string,
+  BudgetId: string
 ) {
+  console.log(BudgetId, "ini budget id di model transaction update");
+
   const db = await GetDB();
 
   const updateTransaction = await db.collection(COLLECTION_NAME).updateOne(
@@ -166,10 +169,93 @@ export async function updateMyTransaction(
     }
   );
 
-  // Update budget
-  
-
   return updateTransaction;
 }
+
+export async function afterUpdateTransaction(
+  BudgetId: string,
+  UserId: string,
+  input: InputEditTransaction,
+  TransactionId: string
+) {
+  const db = await GetDB();
+
+  const findBudgetById = (await db.collection("budgets").findOne({
+    _id: new ObjectId(BudgetId),
+    UserId: new ObjectId(UserId),
+  })) as BudgetModel | null;
+  console.log(findBudgetById, "MODEL - ini find budget by id");
+
+  const findTransaction = (await db.collection(COLLECTION_NAME).findOne({
+    _id: new ObjectId(TransactionId),
+    UserId: new ObjectId(UserId),
+  })) as TransactionModel | null;
+  console.log(findTransaction, "MODEL - ini find transaction by id");
+
+  // Cek jika inputan type expense
+  const remainingExpense =
+    Number(findBudgetById!.remaining) + Number(findTransaction!.amount);
+  const spentExpense =
+    Number(findBudgetById!.spent) - Number(findTransaction!.amount);
+
+  // Cek jika inputan type income
+  const remainingIncome =
+    Number(findBudgetById!.remaining) - Number(findTransaction!.amount);
+  const incomeIncome =
+    Number(findBudgetById!.income) - Number(findTransaction!.amount);
+
+  // Cek jika inputan type expense
+  if (findTransaction?.type === "expense") {
+    console.log("masuk expense");
+
+    await db.collection("budgets").updateOne(
+      {
+        _id: new ObjectId(BudgetId),
+        UserId: new ObjectId(UserId),
+      },
+      {
+        $set: {
+          remaining: Number(remainingExpense) - Number(input.amount),
+          spent: Number(spentExpense) + Number(input.amount),
+        },
+      }
+    );
+  } else if (findTransaction?.type === "income") {
+    console.log("masuk income");
+
+    await db.collection("budgets").updateOne(
+      {
+        _id: new ObjectId(BudgetId),
+        UserId: new ObjectId(UserId),
+      },
+      {
+        $set: {
+          remaining: Number(remainingIncome) + Number(input.amount),
+          income: Number(incomeIncome) + Number(input.amount),
+        },
+      }
+    );
+  }
+
+  // Cek budget terbaru
+  const findBudgetTerbaru = (await db.collection("budgets").findOne({
+    _id: new ObjectId(BudgetId),
+    UserId: new ObjectId(UserId),
+  })) as BudgetModel | null;
+
+  return findBudgetTerbaru;
+}
+
+// if (findMyTransactionById.type === "income") {
+//   await budget.update({
+//     remaining: Number(remainingIncome) + Number(amount),
+//     income: Number(incomeIncome) + Number(amount),
+//   });
+// } else if (findMyTransactionById.type === "expense") {
+//   await budget.update({
+//     remaining: Number(remainingExpense) - Number(amount),
+//     spent: Number(spentExpense) + Number(amount),
+//   });
+// }
 
 // deleteMyTransaction
