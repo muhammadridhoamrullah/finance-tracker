@@ -15,12 +15,14 @@ router.post("/budget", Controller.createBudget);
 router.get("/budget", Controller.getMyBudget);
 router.get("/budget/:id", Controller.getMyBudgetById);
 router.put("/budget/:id", Controller.updateMyBudget);
+router.delete("/budget/:id", Controller.deleteMyBudget);
 
 // Transaction Routes
 router.post("/transaction", Controller.createTransaction);
 router.get("/transaction", Controller.getMyTransaction);
 router.get("/transaction/:id", Controller.getMyTransactionById);
 router.put("/transaction/:id", Controller.updateMyTransaction);
+router.delete("/transaction/:id", Controller.deleteMyTransaction);
 
 router.use(errorHandling);
 

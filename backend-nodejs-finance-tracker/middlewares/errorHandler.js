@@ -66,6 +66,8 @@ async function errorHandling(err, req, res, next) {
       .json({ message: "Date is can't greater than End Date on Budget" });
   } else if (err.name === "ERROR_UPDATE_TRANSACTION") {
     res.status(404).json({ message: "Error update transaction" });
+  } else if (err.name === "ERROR_DELETE_BUDGET") {
+    res.status(404).json({ message: "Error delete budget" });
   }
 }
 

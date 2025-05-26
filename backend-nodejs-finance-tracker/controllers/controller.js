@@ -151,6 +151,7 @@ class Controller {
           },
         ],
       });
+      console.log(findBudgetById, "<<< findBudgetById <<<");
 
       if (findBudgetById === null) {
         throw { name: "BUDGET_NOT_FOUND" };
@@ -235,6 +236,47 @@ class Controller {
 
       res.status(200).json({
         message: "Budget Updated Successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteMyBudget(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { id } = req.params;
+
+      const findBudgetById = await Budget.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        include: [
+          {
+            model: Transaction,
+          },
+        ],
+      });
+
+      if (findBudgetById === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      const deleteBudget = await Budget.destroy({
+        where: {
+          id,
+          UserId,
+        },
+      });
+
+      if (deleteBudget === 0) {
+        throw { name: "ERROR_DELETE_BUDGET" };
+      }
+
+      res.status(200).json({
+        message: "Budget Deleted Successfully",
       });
     } catch (error) {
       next(error);
@@ -471,75 +513,115 @@ class Controller {
     }
   }
 
+  static async deleteMyTransaction(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { id } = req.params;
+
+      const findMyTransactionById = await Transaction.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        include: [
+          {
+            model: Budget,
+          },
+        ],
+      });
+      console.log(findMyTransactionById, "ini sebelum delete");
+
+      if (findMyTransactionById === null) {
+        throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      const deleteTransaction = await Transaction.destroy({
+        where: {
+          id,
+          UserId,
+        },
+      });
+      console.log(deleteTransaction, "ini delete transaction");
+
+      if (deleteTransaction === 0) {
+        throw { name: "ERROR_DELETE_TRANSACTION" };
+      }
+
+      const budget = await Budget.findByPk(findMyTransactionById.BudgetId);
+      console.log(budget, "ini budget setelah delete");
+
+      if (budget === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      // Cek jika type yang diinput adalah income
+      if (findMyTransactionById.type === "income") {
+        await budget.update({
+          remaining:
+            Number(budget.remaining) - Number(findMyTransactionById.amount),
+          income: Number(budget.income) - Number(findMyTransactionById.amount),
+        });
+      } else if (findMyTransactionById.type === "expense") {
+        await budget.update({
+          remaining:
+            Number(budget.remaining) + Number(findMyTransactionById.amount),
+          spent: Number(budget.spent) - Number(findMyTransactionById.amount),
+        });
+      }
+
+      res.status(200).json({
+        message: "Transaction Deleted Successfully",
+        data: budget,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Akhir Transaction
+
+  // {
+  //     "id": 8,
+  //     "UserId": 5,
+  //     "name": "April",
+  //     "amount": 4000000,
+  //     "spent": 50000,
+  //     "income": 500000,
+  //     "startDate": "2025-04-01T00:00:00.000Z",
+  //     "endDate": "2025-04-30T00:00:00.000Z",
+  //     "remaining": 4450000,
+  //     "createdAt": "2025-05-21T06:59:59.477Z",
+  //     "updatedAt": "2025-05-26T07:22:57.616Z",
+  //     "Transactions": [
+  //       {
+  //         "id": 20,
+  //         "amount": 30000,
+  //         "category": "Drink",
+  //         "type": "expense",
+  //         "date": "2025-04-03T00:00:00.000Z",
+  //         "description": "Es Kelapa Muda",
+  //         "UserId": 5,
+  //         "BudgetId": 8,
+  //         "createdAt": "2025-05-21T07:26:43.596Z",
+  //         "updatedAt": "2025-05-21T07:28:34.014Z"
+  //       },
+  //       {
+  //         "id": 25,
+  //         "amount": 500000,
+  //         "category": "Bonus 2",
+  //         "type": "income",
+  //         "date": "2025-04-03T00:00:00.000Z",
+  //         "description": "Bonus Perfomance 2",
+  //         "UserId": 5,
+  //         "BudgetId": 8,
+  //         "createdAt": "2025-05-26T07:22:57.599Z",
+  //         "updatedAt": "2025-05-26T07:22:57.599Z"
+  //       }
+  //     ]
+  //   }
 }
 
 module.exports = {
   Controller,
 };
-
-// Budget Mei
-
-// {
-//   "findBudgetById": {
-//     "id": 9,
-//     "UserId": 5,
-//     "name": "May",
-//     "amount": 5000000,
-//     "spent": 50000,
-//     "income": 0,
-//     "startDate": "2025-05-01T00:00:00.000Z",
-//     "endDate": "2025-05-31T00:00:00.000Z",
-//     "remaining": 4950000,
-//     "createdAt": "2025-05-21T07:56:28.926Z",
-//     "updatedAt": "2025-05-21T07:57:03.695Z",
-//     "Transactions": [
-//       {
-//         "id": 21,
-//         "amount": 50000,
-//         "category": "Food",
-//         "type": "expense",
-//         "date": "2025-05-03T00:00:00.000Z",
-//         "description": "KFC",
-//         "UserId": 5,
-//         "BudgetId": 9,
-//         "createdAt": "2025-05-21T07:57:03.685Z",
-//         "updatedAt": "2025-05-21T07:57:03.685Z"
-//       }
-//     ]
-//   }
-// }
-
-// Salah satu transaksi di budget Mei
-
-// {
-//   "findMyTransactionById": {
-//     "id": 21,
-//     "amount": 50000,
-//     "category": "Food",
-//     "type": "expense",
-//     "date": "2025-05-03T00:00:00.000Z",
-//     "description": "KFC",
-//     "UserId": 5,
-//     "BudgetId": 9,
-//     "createdAt": "2025-05-21T07:57:03.685Z",
-//     "updatedAt": "2025-05-21T07:57:03.685Z",
-//     "Budget": {
-//       "id": 9,
-//       "UserId": 5,
-//       "name": "May",
-//       "amount": 5000000,
-//       "spent": 50000,
-//       "income": 0,
-//       "startDate": "2025-05-01T00:00:00.000Z",
-//       "endDate": "2025-05-31T00:00:00.000Z",
-//       "remaining": 4950000,
-//       "createdAt": "2025-05-21T07:56:28.926Z",
-//       "updatedAt": "2025-05-21T07:57:03.695Z"
-//     }
-//   }
-// }
-
-// Saya mau update transaksi di atas dengan amount 55000
-// Berarti budget.remaining = 4950000 + 50000 - 55000, = 4945000
-// budget.spent = 50000 - - 50000 + 55000 = 55000
