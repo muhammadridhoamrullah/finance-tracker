@@ -95,7 +95,12 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Budget",
+      paranoid: true,
+      deletedAt: "deletedAt",
     }
   );
+
+  // Hook soft delete Transactions when Budget is deleted
+  
   return Budget;
 };

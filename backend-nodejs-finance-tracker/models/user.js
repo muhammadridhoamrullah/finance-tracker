@@ -113,10 +113,44 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "User",
+      paranoid: true,
+      deletedAt: "deletedAt",
     }
   );
   User.beforeCreate((user) => {
     user.password = hashPassword(user.password);
   });
+
+  // Hook untuk soft delete Budget and Transaction when User is deleted
+  User.beforeDestroy(async (user, options) => {
+    const { Budget, Transaction } = sequelize.models;
+
+    // Soft delete all Budgets associated with the User
+    await Budget.update(
+      {
+        deletedAt: new Date(),
+      },
+      {
+        where: {
+          UserId: user.id,
+        },
+        transaction: options.transaction,
+      }
+    );
+
+    // Soft delete all Transactions associated with the User
+    await Transaction.update(
+      {
+        deletedAt: new Date(),
+      },
+      {
+        where: {
+          UserId: user.id,
+        },
+        transaction: options.transaction,
+      }
+    );
+  });
+
   return User;
 };

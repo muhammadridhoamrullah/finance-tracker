@@ -16,6 +16,7 @@ router.get("/budget", Controller.getMyBudget);
 router.get("/budget/:id", Controller.getMyBudgetById);
 router.put("/budget/:id", Controller.updateMyBudget);
 router.delete("/budget/:id", Controller.deleteMyBudget);
+router.patch("/budget/restore/:id", Controller.restoreMyBudget);
 
 // Transaction Routes
 router.post("/transaction", Controller.createTransaction);

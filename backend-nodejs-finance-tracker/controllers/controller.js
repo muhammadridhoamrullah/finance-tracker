@@ -115,6 +115,7 @@ class Controller {
         where: {
           UserId,
         },
+        // paranoid: false, jika ingin mengambil data yang sudah di soft delete
         include: [
           {
             model: Transaction,
@@ -277,6 +278,34 @@ class Controller {
 
       res.status(200).json({
         message: "Budget Deleted Successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async restoreMyBudget(req, res, next) {
+    try {
+      const UserId = req.user.id;
+      const { id } = req.params;
+
+      const findBudgetById = await Budget.findOne({
+        where: {
+          id,
+          UserId,
+        },
+        paranoid: false,
+      });
+
+      if (findBudgetById === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      await Budget.restore();
+
+      res.status(200).json({
+        message: "Budget Restored Successfully",
+        data: findBudgetById,
       });
     } catch (error) {
       next(error);
@@ -625,3 +654,50 @@ class Controller {
 module.exports = {
   Controller,
 };
+
+// {
+//   "budgets": [
+//     {
+//       "id": 2,
+//       "UserId": 4,
+//       "name": "January",
+//       "amount": 1000000,
+//       "spent": 100000,
+//       "income": 0,
+//       "startDate": "2025-01-01T00:00:00.000Z",
+//       "endDate": "2025-01-31T00:00:00.000Z",
+//       "remaining": 900000,
+//       "createdAt": "2025-05-26T08:23:00.114Z",
+//       "updatedAt": "2025-05-26T08:25:13.033Z",
+//       "deletedAt": null,
+//       "Transactions": [
+//         {
+//           "id": 2,
+//           "amount": 75000,
+//           "category": "Food",
+//           "type": "expense",
+//           "date": "2025-01-03T00:00:00.000Z",
+//           "description": "Makan Seafood",
+//           "UserId": 4,
+//           "BudgetId": 2,
+//           "createdAt": "2025-05-26T08:23:55.233Z",
+//           "updatedAt": "2025-05-26T08:24:46.681Z",
+//           "deletedAt": null
+//         },
+//         {
+//           "id": 3,
+//           "amount": 25000,
+//           "category": "Drink",
+//           "type": "expense",
+//           "date": "2025-01-03T00:00:00.000Z",
+//           "description": "Minum Es Teh",
+//           "UserId": 4,
+//           "BudgetId": 2,
+//           "createdAt": "2025-05-26T08:25:13.029Z",
+//           "updatedAt": "2025-05-26T08:25:13.029Z",
+//           "deletedAt": null
+//         }
+//       ]
+//     }
+//   ]
+// }

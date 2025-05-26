@@ -103,6 +103,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Transaction",
+      paranoid: true,
+      deletedAt: "deletedAt",
     }
   );
   return Transaction;
