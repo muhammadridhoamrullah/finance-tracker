@@ -68,6 +68,10 @@ async function errorHandling(err, req, res, next) {
     res.status(404).json({ message: "Error update transaction" });
   } else if (err.name === "ERROR_DELETE_BUDGET") {
     res.status(404).json({ message: "Error delete budget" });
+  } else if (err.name === "FORBIDDEN") {
+    res
+      .status(403)
+      .json({ message: "You are not allowed to access this resource" });
   }
 }
 

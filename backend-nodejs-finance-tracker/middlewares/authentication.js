@@ -3,6 +3,7 @@ const { User } = require("../models/index");
 
 async function authentication(req, res, next) {
   try {
+    console.log("Masuk Authentication Middleware");
     const { authorization } = req.headers;
 
     if (!authorization) {

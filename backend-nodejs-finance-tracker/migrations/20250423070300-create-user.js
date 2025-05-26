@@ -15,6 +15,10 @@ module.exports = {
       lastName: {
         type: Sequelize.STRING,
       },
+      role: {
+        type: Sequelize.STRING,
+        defaultValue: "User",
+      },
       email: {
         type: Sequelize.STRING,
         unique: true,

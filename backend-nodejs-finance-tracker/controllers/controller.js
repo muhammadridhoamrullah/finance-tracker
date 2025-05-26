@@ -2,6 +2,7 @@ const e = require("express");
 const { comparePassword } = require("../helpers/bcrypt");
 const { SignToken } = require("../helpers/jwt");
 const { User, Budget, Transaction } = require("../models/index");
+const { or } = require("sequelize");
 
 class Controller {
   static async login(req, res, next) {
@@ -115,15 +116,22 @@ class Controller {
         where: {
           UserId,
         },
-        // paranoid: false, jika ingin mengambil data yang sudah di soft delete
+        order: [["createdAt", "ASC"]],
+
         include: [
           {
             model: Transaction,
           },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+          },
         ],
       });
 
-      if (budgets === null) {
+      if (budgets.length === 0) {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
@@ -144,15 +152,19 @@ class Controller {
       const findBudgetById = await Budget.findOne({
         where: {
           id,
-          UserId,
         },
         include: [
           {
             model: Transaction,
           },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+          },
         ],
       });
-      console.log(findBudgetById, "<<< findBudgetById <<<");
 
       if (findBudgetById === null) {
         throw { name: "BUDGET_NOT_FOUND" };
@@ -177,7 +189,6 @@ class Controller {
       const findBudgetById = await Budget.findOne({
         where: {
           id,
-          UserId,
         },
         include: [
           {
@@ -185,6 +196,7 @@ class Controller {
           },
         ],
       });
+      console.log(findBudgetById, "<<< findBudgetById <<<");
 
       if (findBudgetById.Transactions.length > 0) {
         throw { name: "BUDGET_CANT_BE_UPDATED" };
@@ -226,7 +238,6 @@ class Controller {
         {
           where: {
             id,
-            UserId,
           },
         }
       );
@@ -252,7 +263,6 @@ class Controller {
       const findBudgetById = await Budget.findOne({
         where: {
           id,
-          UserId,
         },
         include: [
           {
@@ -268,7 +278,6 @@ class Controller {
       const deleteBudget = await Budget.destroy({
         where: {
           id,
-          UserId,
         },
       });
 
@@ -292,7 +301,6 @@ class Controller {
       const findBudgetById = await Budget.findOne({
         where: {
           id,
-          UserId,
         },
         paranoid: false,
       });
@@ -381,14 +389,21 @@ class Controller {
         where: {
           UserId,
         },
+        order: [["createdAt", "ASC"]],
         include: [
           {
             model: Budget,
           },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+          },
         ],
       });
 
-      if (myTransaction === null) {
+      if (myTransaction.length === 0) {
         throw { name: "TRANSACTION_NOT_FOUND" };
       }
 
@@ -409,11 +424,16 @@ class Controller {
       const findMyTransactionById = await Transaction.findOne({
         where: {
           id,
-          UserId,
         },
         include: [
           {
             model: Budget,
+          },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
           },
         ],
       });
@@ -441,11 +461,16 @@ class Controller {
       const findMyTransactionById = await Transaction.findOne({
         where: {
           id,
-          UserId,
         },
         include: [
           {
             model: Budget,
+          },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
           },
         ],
       });
@@ -485,11 +510,11 @@ class Controller {
           type,
           date,
           description,
+          updatedAt: new Date(),
         },
         {
           where: {
             id,
-            UserId,
           },
         }
       );
@@ -551,7 +576,6 @@ class Controller {
       const findMyTransactionById = await Transaction.findOne({
         where: {
           id,
-          UserId,
         },
         include: [
           {
@@ -568,7 +592,6 @@ class Controller {
       const deleteTransaction = await Transaction.destroy({
         where: {
           id,
-          UserId,
         },
       });
       console.log(deleteTransaction, "ini delete transaction");
@@ -608,47 +631,142 @@ class Controller {
     }
   }
 
+  static async restoreMyTransaction(req, res, next) {
+    try {
+      const UserId = req.user.id;
+      const { id } = req.params;
+
+      const findMyTransactionById = await Transaction.findOne({
+        where: {
+          id,
+        },
+        paranoid: false,
+        include: [
+          {
+            model: Budget,
+          },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+          },
+        ],
+      });
+      console.log(findMyTransactionById, "<<< findMyTransactionById <<<");
+
+      if (findMyTransactionById === null) {
+        throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      await Transaction.restore({
+        where: {
+          id,
+        },
+      });
+
+      const budget = await Budget.findOne({
+        where: {
+          id: findMyTransactionById.BudgetId,
+        },
+      });
+
+      if (budget === null) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      // Cek apa type yang diinput
+      if (findMyTransactionById.type === "expense") {
+        await budget.update({
+          remaining:
+            Number(budget.remaining) - Number(findMyTransactionById.amount),
+          spent: Number(budget.spent) + Number(findMyTransactionById.amount),
+        });
+      } else if (findMyTransactionById.type === "income") {
+        await budget.update({
+          remaining:
+            Number(budget.remaining) + Number(findMyTransactionById.amount),
+          income: Number(budget.income) + Number(findMyTransactionById.amount),
+        });
+      }
+
+      res.status(200).json({
+        message: "Transaction Restored Successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Akhir Transaction
 
-  // {
-  //     "id": 8,
-  //     "UserId": 5,
-  //     "name": "April",
-  //     "amount": 4000000,
-  //     "spent": 50000,
-  //     "income": 500000,
-  //     "startDate": "2025-04-01T00:00:00.000Z",
-  //     "endDate": "2025-04-30T00:00:00.000Z",
-  //     "remaining": 4450000,
-  //     "createdAt": "2025-05-21T06:59:59.477Z",
-  //     "updatedAt": "2025-05-26T07:22:57.616Z",
-  //     "Transactions": [
-  //       {
-  //         "id": 20,
-  //         "amount": 30000,
-  //         "category": "Drink",
-  //         "type": "expense",
-  //         "date": "2025-04-03T00:00:00.000Z",
-  //         "description": "Es Kelapa Muda",
-  //         "UserId": 5,
-  //         "BudgetId": 8,
-  //         "createdAt": "2025-05-21T07:26:43.596Z",
-  //         "updatedAt": "2025-05-21T07:28:34.014Z"
-  //       },
-  //       {
-  //         "id": 25,
-  //         "amount": 500000,
-  //         "category": "Bonus 2",
-  //         "type": "income",
-  //         "date": "2025-04-03T00:00:00.000Z",
-  //         "description": "Bonus Perfomance 2",
-  //         "UserId": 5,
-  //         "BudgetId": 8,
-  //         "createdAt": "2025-05-26T07:22:57.599Z",
-  //         "updatedAt": "2025-05-26T07:22:57.599Z"
-  //       }
-  //     ]
-  //   }
+  // Awal Admin
+
+  static async getAllBudget(req, res, next) {
+    try {
+      const findAllBudget = await Budget.findAll({
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+            paranoid: false,
+          },
+          {
+            model: Transaction,
+            paranoid: false,
+          },
+        ],
+        order: [["createdAt", "ASC"]],
+        paranoid: false,
+      });
+
+      if (findAllBudget.length === 0) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      res.status(200).json({
+        budgets: findAllBudget,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAllTransaction(req, res, next) {
+    try {
+      const findAllTransaction = await Transaction.findAll({
+        include: [
+          {
+            model: Budget,
+            paranoid: false,
+          },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+            paranoid: false,
+          },
+        ],
+        order: [["createdAt", "ASC"]],
+        paranoid: false,
+      });
+
+      if (findAllTransaction.length === 0) {
+        throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      res.status(200).json({
+        transactions: findAllTransaction,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Akhir Admin
 }
 
 module.exports = {
@@ -662,18 +780,18 @@ module.exports = {
 //       "UserId": 4,
 //       "name": "January",
 //       "amount": 1000000,
-//       "spent": 100000,
+//       "spent": 50000,
 //       "income": 0,
 //       "startDate": "2025-01-01T00:00:00.000Z",
 //       "endDate": "2025-01-31T00:00:00.000Z",
-//       "remaining": 900000,
+//       "remaining": 950000,
 //       "createdAt": "2025-05-26T08:23:00.114Z",
-//       "updatedAt": "2025-05-26T08:25:13.033Z",
+//       "updatedAt": "2025-05-26T13:58:51.063Z",
 //       "deletedAt": null,
 //       "Transactions": [
 //         {
 //           "id": 2,
-//           "amount": 75000,
+//           "amount": 25000,
 //           "category": "Food",
 //           "type": "expense",
 //           "date": "2025-01-03T00:00:00.000Z",
@@ -685,7 +803,7 @@ module.exports = {
 //           "deletedAt": null
 //         },
 //         {
-//           "id": 3,
+//           "id": 6,
 //           "amount": 25000,
 //           "category": "Drink",
 //           "type": "expense",
@@ -693,8 +811,42 @@ module.exports = {
 //           "description": "Minum Es Teh",
 //           "UserId": 4,
 //           "BudgetId": 2,
-//           "createdAt": "2025-05-26T08:25:13.029Z",
-//           "updatedAt": "2025-05-26T08:25:13.029Z",
+//           "createdAt": "2025-05-26T13:58:51.048Z",
+//           "updatedAt": "2025-05-26T13:58:51.048Z",
+//           "deletedAt": null
+//         }
+//       ]
+//     }
+//   ]
+// }
+
+// {
+//   "budgets": [
+//     {
+//       "id": 2,
+//       "UserId": 4,
+//       "name": "January",
+//       "amount": 1000000,
+//       "spent": 25000,
+//       "income": 0,
+//       "startDate": "2025-01-01T00:00:00.000Z",
+//       "endDate": "2025-01-31T00:00:00.000Z",
+//       "remaining": 975000,
+//       "createdAt": "2025-05-26T08:23:00.114Z",
+//       "updatedAt": "2025-05-26T13:59:51.881Z",
+//       "deletedAt": null,
+//       "Transactions": [
+//         {
+//           "id": 2,
+//           "amount": 25000,
+//           "category": "Food",
+//           "type": "expense",
+//           "date": "2025-01-03T00:00:00.000Z",
+//           "description": "Makan Seafood",
+//           "UserId": 4,
+//           "BudgetId": 2,
+//           "createdAt": "2025-05-26T08:23:55.233Z",
+//           "updatedAt": "2025-05-26T08:24:46.681Z",
 //           "deletedAt": null
 //         }
 //       ]

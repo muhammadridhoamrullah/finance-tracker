@@ -2,6 +2,7 @@
   {
     "firstName": "Muhammad Ridho",
     "lastName": "Amrullah",
+    "role": "Admin",
     "email": "ridhoamrullah99@gmail.com",
     "password": "1234567890",
     "phoneNumber": "085363508580",
@@ -10,15 +11,17 @@
   {
     "firstName": "Admin",
     "lastName": "Satu",
+    "role": "Admin",
     "email": "admin1@gmail.com",
     "password": "1234567890",
     "phoneNumber": "089876543210",
     "address": "789 Pine Road, Surabaya, Indonesia"
   },
   {
-    "firstName": "Admin",
-    "lastName": "Dua",
-    "email": "admin2@gmail.com",
+    "firstName": "User",
+    "lastName": "Satu",
+    "email": "user1@gmail.com",
+    "role": "User",
     "password": "1234567890",
     "phoneNumber": "082134567890",
     "address": "321 Elm Boulevard, Bali, Indonesia"
