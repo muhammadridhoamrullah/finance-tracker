@@ -1,6 +1,10 @@
 import {
   deleteMyBudget,
   getMyBudgetById,
+  getMyBudgetByIdForRestore,
+  restoreMyBudget,
+  restoreTransactionAfterRestoreBudget,
+  softDeleteTransactionAfterDeleteBudget,
   updateMyBudget,
 } from "@/db/model/budget";
 import { headers } from "next/headers";
@@ -228,10 +232,15 @@ export async function DELETE(request: NextRequest) {
     }
 
     const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel | null;
+    console.log(findBudget, "findBudget di route budget");
 
     if (!findBudget) {
       throw new Error("Budget not found");
     }
+
+    const isAlreadyHaveTransaction =
+      findBudget.income > 0 || findBudget.spent > 0;
+    console.log(isAlreadyHaveTransaction, "isAlreadyHaveTransaction");
 
     // Cek apakah user yang menghapus adalah pemilik budget atau admin
     const authCheck = await checkAuthorization(
@@ -252,10 +261,102 @@ export async function DELETE(request: NextRequest) {
       throw new Error("Failed to delete budget");
     }
 
+    // Otomatis mendelete transaksi yang terkait dengan budget ini
+    if (isAlreadyHaveTransaction) {
+      const deleteTransactionByBudgetId =
+        await softDeleteTransactionAfterDeleteBudget(BudgetId);
+
+      if (deleteTransactionByBudgetId.modifiedCount === 0) {
+        throw new Error("Failed to delete transactions related to this budget");
+      }
+    }
+
     return NextResponse.json(
       {
         message: "Successfully delete budget",
         data: deleteBudget,
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          message: "Internal Server Error",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const headerList = headers();
+    const UserId = (await headerList).get("x-user-id");
+    const UserRole = (await headerList).get("x-role");
+    const BudgetId = request.nextUrl.pathname.split("/").pop();
+
+    if (!UserId) throw new Error("UserId not found");
+    if (!BudgetId) throw new Error("BudgetId not found");
+    if (!UserRole) throw new Error("UserRole not found");
+
+    const findBudget = (await getMyBudgetByIdForRestore(
+      BudgetId
+    )) as BudgetModel | null;
+
+    if (!findBudget) throw new Error("Budget not found or not deleted");
+    const isAlreadyHaveTransaction =
+      findBudget.income > 0 || findBudget.spent > 0;
+
+    // Cek apakah user yang menghapus adalah pemilik budget atau admin
+    const authCheck = await checkAuthorization(
+      UserId,
+      UserRole,
+      findBudget.UserId.toString()
+    );
+
+    if (authCheck) {
+      return authCheck;
+    }
+
+    const restoreBudget = await restoreMyBudget(BudgetId);
+
+    if (restoreBudget.modifiedCount === 0) {
+      throw new Error("Failed to restore budget");
+    }
+
+    // Check jika budget yang di restore sudah ada transaksi yang terkait
+
+    if (isAlreadyHaveTransaction) {
+      const restoreTransaction = await restoreTransactionAfterRestoreBudget(
+        BudgetId
+      );
+
+      if (restoreTransaction.modifiedCount === 0) {
+        throw new Error(
+          "Failed to restore transactions related to this budget"
+        );
+      }
+    }
+
+    return NextResponse.json(
+      {
+        message: "Successfully restore budget",
+        data: restoreBudget,
       },
       {
         status: 200,

@@ -24,7 +24,7 @@ export interface BudgetModel {
   remaining: number;
   createdAt: Date;
   updatedAt: Date;
-  deltedAt: Date | null;
+  deletedAt: Date | null;
   isDeleted: boolean;
 }
 

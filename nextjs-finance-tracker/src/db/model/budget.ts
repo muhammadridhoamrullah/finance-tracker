@@ -59,6 +59,17 @@ export async function getMyBudgetById(BudgetId: string) {
   return findMyBudget;
 }
 
+export async function getMyBudgetByIdForRestore(BudgetId: string) {
+  const db = await GetDB();
+
+  const findMyBudget = await db.collection(COLLECTION_NAME).findOne({
+    _id: new ObjectId(BudgetId),
+    isDeleted: true,
+  });
+
+  return findMyBudget;
+}
+
 // updateMyBudget
 
 export async function updateMyBudget(
@@ -105,4 +116,61 @@ export async function deleteMyBudget(BudgetId: string) {
   return softDeleteMyBudget;
 }
 
+export async function softDeleteTransactionAfterDeleteBudget(BudgetId: string) {
+  const db = await GetDB();
+
+  const softDeleteTransaction = await db.collection("transactions").updateMany(
+    {
+      BudgetId: new ObjectId(BudgetId),
+    },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    }
+  );
+
+  return softDeleteTransaction;
+}
+
 // restoreMyBudget
+
+export async function restoreMyBudget(BudgetId: string) {
+  const db = await GetDB();
+
+  const restore = await db.collection(COLLECTION_NAME).updateOne(
+    {
+      _id: new ObjectId(BudgetId),
+    },
+    {
+      $set: {
+        isDeleted: false,
+        deletedAt: null,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  return restore;
+}
+
+export async function restoreTransactionAfterRestoreBudget(BudgetId: string) {
+  const db = await GetDB();
+
+  const restoreTransaction = await db.collection("transactions").updateMany(
+    {
+      BudgetId: new ObjectId(BudgetId),
+      isDeleted: true,
+    },
+    {
+      $set: {
+        isDeleted: false,
+        deletedAt: null,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  return restoreTransaction;
+}

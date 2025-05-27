@@ -1,10 +1,16 @@
 import { getMyBudgetById } from "@/db/model/budget";
 import {
   afterUpdateTransaction,
+  deleteMyTransaction,
   getMyTransactionById,
+  getMyTransactionByIdForRestore,
+  restoreMyTransaction,
+  updateBudgetAfterDeleteTransaction,
+  updateBudgetAfterRestoreTransaction,
   updateMyTransaction,
 } from "@/db/model/transaction";
 import { BudgetModel } from "@/db/type/type";
+import { checkAuthorization } from "@/db/utils/authorization";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -28,6 +34,8 @@ interface TransactionModel2 {
   BudgetId: string;
   createdAt: Date;
   updatedAt: Date;
+  isDeleted: boolean;
+  deletedAt: Date | null;
   Budget: BudgetModel;
 }
 
@@ -47,7 +55,7 @@ export async function GET(request: NextRequest) {
       throw new Error("UserId not found");
     }
 
-    const findTransaction = await getMyTransactionById(TransactionId, UserId);
+    const findTransaction = await getMyTransactionById(TransactionId);
 
     if (!findTransaction) {
       throw new Error("Transaction not found");
@@ -108,10 +116,9 @@ export async function PUT(request: NextRequest) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
-    const findTransaction = (await getMyTransactionById(
-      TransactionId,
-      UserId
-    )) as TransactionModel2[] | null;
+    const findTransaction = (await getMyTransactionById(TransactionId)) as
+      | TransactionModel2[]
+      | null;
     console.log(findTransaction, "ini findTransaction API PUT");
 
     if (!findTransaction) {
@@ -210,70 +217,184 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// Sebelum update
-// {
-//   "message": "Succesfully get Transaction",
-//   "data": [
-//     {
-//       "_id": "682ed3c640273b0dd85d93f5",
-//       "amount": 50000,
-//       "category": "Food",
-//       "type": "expense",
-//       "date": "2025-01-20",
-//       "description": "Bakso Polres",
-//       "BudgetId": "682ecd0c63e6e0a95c2a2226",
-//       "UserId": "6819ac414f3b3d61b90759d7",
-//       "createdAt": "2025-05-22T07:35:34.597Z",
-//       "updatedAt": "2025-05-23T14:34:03.879Z",
-//       "Budget": [
-//         {
-//           "_id": "682ecd0c63e6e0a95c2a2226",
-//           "name": "January 2222",
-//           "amount": 2000000,
-//           "startDate": "2025-01-01",
-//           "endDate": "2025-01-31",
-//           "UserId": "6819ac414f3b3d61b90759d7",
-//           "spent": 50000,
-//           "income": 0,
-//           "remaining": 1950000,
-//           "createdAt": "2025-05-22T07:06:52.845Z",
-//           "updatedAt": "2025-05-23T07:23:54.021Z"
-//         }
-//       ]
-//     }
-//   ]
-// }
+export async function DELETE(request: NextRequest) {
+  try {
+    const headerList = headers();
+    const UserId = (await headerList).get("x-user-id");
+    const TransactionId = request.nextUrl.pathname.split("/").pop();
+    const UserRole = (await headerList).get("x-role");
+    console.log(TransactionId, "TransactionId API DEL");
 
-// Setelah update
-// {
-//   "message": "Succesfully get Transaction",
-//   "data": [
-//     {
-//       "_id": "682ed3c640273b0dd85d93f5",
-//       "amount": 20000,
-//       "category": "Food",
-//       "type": "expense",
-//       "date": "2025-01-20",
-//       "description": "Bakso Polres",
-//       "BudgetId": "682ecd0c63e6e0a95c2a2226",
-//       "UserId": "6819ac414f3b3d61b90759d7",
-//       "createdAt": "2025-05-22T07:35:34.597Z",
-//       "updatedAt": "2025-05-23T15:17:43.477Z",
-//       "Budget": [
-//         {
-//           "_id": "682ecd0c63e6e0a95c2a2226",
-//           "name": "January 2222",
-//           "amount": 2000000,
-//           "startDate": "2025-01-01",
-//           "endDate": "2025-01-31",
-//           "UserId": "6819ac414f3b3d61b90759d7",
-//           "spent": 50000,
-//           "income": 0,
-//           "remaining": 1950000,
-//           "createdAt": "2025-05-22T07:06:52.845Z",
-//           "updatedAt": "2025-05-23T07:23:54.021Z"
-//         }
-//       ]
-//     }
-//   ]
-// }
+    if (!UserId) {
+      throw new Error("UserId not found");
+    }
+
+    if (!TransactionId) {
+      throw new Error("TransactionId not found");
+    }
+
+    if (!UserRole) {
+      throw new Error("UserRole not found");
+    }
+
+    // Cari transaksi berdasarkan TransactionId
+    const findTransaction = (await getMyTransactionById(TransactionId)) as
+      | TransactionModel2[]
+      | null;
+    console.log(findTransaction, "findTransaction API DEL");
+
+    if (!findTransaction) {
+      throw new Error("Transaction not found");
+    }
+
+    const BudgetId = findTransaction[0].BudgetId.toString();
+    const oldAmount = findTransaction[0].amount;
+    const typeTransaction = findTransaction[0].type;
+
+    // Check authorization
+
+    const authCheck = await checkAuthorization(
+      UserId,
+      UserRole,
+      findTransaction[0].UserId.toString()
+    );
+
+    if (authCheck) {
+      return authCheck;
+    }
+
+    // Soft delete transaksi
+    const softDeleteTransaction = await deleteMyTransaction(TransactionId);
+
+    if (softDeleteTransaction.modifiedCount === 0) {
+      throw new Error("Failed to delete transaction");
+    }
+
+    // Update budget setelah transaksi dihapus
+    const updatedBudget = await updateBudgetAfterDeleteTransaction(
+      BudgetId,
+      typeTransaction,
+      oldAmount
+    );
+    console.log(updatedBudget, "update budget line 273 API DEL tRANS");
+
+    if (updatedBudget?.modifiedCount === 0) {
+      throw new Error("Failed to update budget");
+    }
+
+    return NextResponse.json(
+      {
+        message: "Successfully delete transaction",
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          message: "Internal Server Error",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const headerList = headers();
+    const UserId = (await headerList).get("x-user-id");
+    const TransactionId = request.nextUrl.pathname.split("/").pop();
+    const UserRole = (await headerList).get("x-role");
+
+    if (!UserId) throw new Error("UserId not found");
+    if (!TransactionId) throw new Error("TransactionId not found");
+    if (!UserRole) throw new Error("UserRole not found");
+
+    const findTransaction = (await getMyTransactionByIdForRestore(
+      TransactionId
+    )) as TransactionModel2 | null;
+
+    if (!findTransaction) {
+      throw new Error("Transaction not found");
+    }
+    const BudgetId = findTransaction.BudgetId.toString();
+    const typeTransaction = findTransaction.type;
+    const amountDeletedTransaction = findTransaction.amount;
+
+    const findBudget = await getMyBudgetById(BudgetId);
+
+    if (!findBudget) {
+      throw new Error("Budget not found or has been deleted");
+    }
+
+    const authCheck = await checkAuthorization(
+      UserId,
+      UserRole,
+      findTransaction.UserId.toString()
+    );
+
+    if (authCheck) {
+      return authCheck;
+    }
+
+    const restoreTransaction = await restoreMyTransaction(TransactionId);
+
+    if (restoreTransaction.modifiedCount === 0) {
+      throw new Error("Failed to restore transaction");
+    }
+
+    const updateBudgetAftRestoreTrans =
+      await updateBudgetAfterRestoreTransaction(
+        BudgetId,
+        typeTransaction,
+        amountDeletedTransaction
+      );
+
+    if (updateBudgetAftRestoreTrans?.modifiedCount === 0) {
+      throw new Error("Failed to update budget after restoring transaction");
+    }
+
+    return NextResponse.json(
+      {
+        message: "Successfully restored transaction",
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          message: "Internal Server Error",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+  }
+}

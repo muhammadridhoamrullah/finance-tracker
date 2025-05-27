@@ -109,17 +109,13 @@ export async function getMyTransactions(UserId: string) {
 }
 
 // getMyTransactionById
-export async function getMyTransactionById(
-  TransactionId: string,
-  UserId: string
-) {
+export async function getMyTransactionById(TransactionId: string) {
   const db = await GetDB();
 
   const agg = [
     {
       $match: {
         _id: new ObjectId(TransactionId),
-        UserId: new ObjectId(UserId),
       },
     },
     {
@@ -142,6 +138,17 @@ export async function getMyTransactionById(
     .collection(COLLECTION_NAME)
     .aggregate(agg)
     .toArray();
+
+  return findMyTransaction;
+}
+
+export async function getMyTransactionByIdForRestore(TransactionId: string) {
+  const db = await GetDB();
+
+  const findMyTransaction = await db.collection(COLLECTION_NAME).findOne({
+    _id: new ObjectId(TransactionId),
+    isDeleted: true,
+  });
 
   return findMyTransaction;
 }
@@ -269,4 +276,134 @@ export async function afterUpdateTransaction(
 
 // deleteMyTransaction
 
+export async function deleteMyTransaction(TransactionId: string) {
+  const db = await GetDB();
+
+  const deleteTransaction = await db.collection(COLLECTION_NAME).updateOne(
+    {
+      _id: new ObjectId(TransactionId),
+    },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    }
+  );
+
+  return deleteTransaction;
+}
+
+export async function updateBudgetAfterDeleteTransaction(
+  BudgetId: string,
+  typeTransaction: "income" | "expense",
+  oldAmount: number
+) {
+  const db = await GetDB();
+
+  const findBudget = (await db.collection("budgets").findOne({
+    _id: new ObjectId(BudgetId),
+  })) as BudgetModel | null;
+
+  const isExpense = typeTransaction === "expense";
+  const isIncome = typeTransaction === "income";
+
+  if (isExpense) {
+    const updateBudgetExp = await db.collection("budgets").updateOne(
+      {
+        _id: new ObjectId(BudgetId),
+      },
+      {
+        $set: {
+          remaining: Number(findBudget?.remaining) + Number(oldAmount),
+          spent: Number(findBudget?.spent) - Number(oldAmount),
+        },
+      }
+    );
+    console.log(updateBudgetExp, "update line 312 model trans");
+
+    return updateBudgetExp;
+  } else if (isIncome) {
+    const updateBudgetInc = await db.collection("budgets").updateOne(
+      {
+        _id: new ObjectId(BudgetId),
+      },
+      {
+        $set: {
+          remaining: Number(findBudget?.remaining) - Number(oldAmount),
+          income: Number(findBudget?.income) - Number(oldAmount),
+        },
+      }
+    );
+
+    return updateBudgetInc;
+  }
+}
+
 // restoreMyTransaction
+
+export async function restoreMyTransaction(TransactionId: string) {
+  const db = await GetDB();
+
+  const restoreTransaction = await db.collection(COLLECTION_NAME).updateOne(
+    {
+      _id: new ObjectId(TransactionId),
+      isDeleted: true,
+    },
+    {
+      $set: {
+        isDeleted: false,
+        deletedAt: null,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  return restoreTransaction;
+}
+
+export async function updateBudgetAfterRestoreTransaction(
+  BudgetId: string,
+  typeTransaction: "income" | "expense",
+  amountDeletedTransaction: number
+) {
+  const db = await GetDB();
+
+  const findBudget = await db.collection("budgets").findOne({
+    _id: new ObjectId(BudgetId),
+  });
+
+  const isExpense = typeTransaction === "expense";
+  const isIncome = typeTransaction === "income";
+
+  if (isExpense) {
+    const updateBudgetExp = await db.collection("budgets").updateOne(
+      {
+        _id: new ObjectId(BudgetId),
+      },
+      {
+        $set: {
+          remaining:
+            Number(findBudget?.remaining) - Number(amountDeletedTransaction),
+          spent: Number(findBudget?.spent) + Number(amountDeletedTransaction),
+        },
+      }
+    );
+
+    return updateBudgetExp;
+  } else if (isIncome) {
+    const updateBudgetInc = await db.collection("budgets").updateOne(
+      {
+        _id: new ObjectId(BudgetId),
+      },
+      {
+        $set: {
+          remaining:
+            Number(findBudget?.remaining) + Number(amountDeletedTransaction),
+          income: Number(findBudget?.income) + Number(amountDeletedTransaction),
+        },
+      }
+    );
+    return updateBudgetInc;
+  }
+}
