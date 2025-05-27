@@ -5,7 +5,7 @@ import { BudgetModel, TransactionModel } from "../type/type";
 const COLLECTION_NAME = "transactions";
 type InputTransactionModel = Omit<
   TransactionModel,
-  "_id" | "createdAt" | "updatedAt"
+  "_id" | "createdAt" | "updatedAt" | "isDeleted" | "deletedAt"
 >;
 // {
 //   "message": "Succesfully get Transaction",
@@ -34,10 +34,11 @@ export async function createTransaction(input: InputTransactionModel) {
 
   const findBudget = (await db.collection("budgets").findOne({
     _id: new ObjectId(input.BudgetId),
+    isDeleted: { $ne: true },
   })) as BudgetModel | null;
 
   if (!findBudget) {
-    throw new Error("Budget not found");
+    throw new Error("Budget not found / has been deleted");
   }
 
   const isBeforeStartDate =
@@ -99,6 +100,7 @@ export async function getMyTransactions(UserId: string) {
     .collection(COLLECTION_NAME)
     .find({
       UserId: new ObjectId(UserId),
+      isDeleted: { $ne: true },
     })
     .sort({ createdAt: 1 })
     .toArray();
@@ -176,12 +178,14 @@ export async function afterUpdateTransaction(
   BudgetId: string,
   UserId: string,
   input: InputEditTransaction,
-  TransactionId: string
+  TransactionId: string,
+  nilaiTransactionLama: number
 ) {
   const db = await GetDB();
+  const budgetAiDi = BudgetId.toString();
 
   const findBudgetById = (await db.collection("budgets").findOne({
-    _id: new ObjectId(BudgetId),
+    _id: new ObjectId(budgetAiDi),
     UserId: new ObjectId(UserId),
   })) as BudgetModel | null;
   console.log(findBudgetById, "MODEL - ini find budget by id");
@@ -194,15 +198,32 @@ export async function afterUpdateTransaction(
 
   // Cek jika inputan type expense
   const remainingExpense =
-    Number(findBudgetById!.remaining) + Number(findTransaction!.amount);
+    Number(findBudgetById!.remaining) + Number(nilaiTransactionLama);
   const spentExpense =
-    Number(findBudgetById!.spent) - Number(findTransaction!.amount);
+    Number(findBudgetById!.spent) - Number(nilaiTransactionLama);
 
   // Cek jika inputan type income
   const remainingIncome =
-    Number(findBudgetById!.remaining) - Number(findTransaction!.amount);
+    Number(findBudgetById!.remaining) - Number(nilaiTransactionLama);
   const incomeIncome =
-    Number(findBudgetById!.income) - Number(findTransaction!.amount);
+    Number(findBudgetById!.income) - Number(nilaiTransactionLama);
+  console.log(remainingExpense, "ini remaining expense");
+  console.log(spentExpense, "ini spent expense");
+  console.log(BudgetId, "ini budget id di model transaction after update");
+  console.log(UserId, "ini user id di model transaction after update");
+  console.log(
+    input.amount,
+    "ini input amount di model transaction after update"
+  );
+  console.log(
+    findTransaction?.amount,
+    "ini find transaction amount di model transaction after update"
+  );
+  console.log(
+    budgetAiDi,
+    "ini budget id to string di model transaction after update"
+  );
+  console.log(nilaiTransactionLama, "nilai amount lama");
 
   // Cek jika inputan type expense
   if (findTransaction?.type === "expense") {
@@ -210,7 +231,7 @@ export async function afterUpdateTransaction(
 
     await db.collection("budgets").updateOne(
       {
-        _id: new ObjectId(BudgetId),
+        _id: new ObjectId(budgetAiDi),
         UserId: new ObjectId(UserId),
       },
       {
@@ -225,7 +246,7 @@ export async function afterUpdateTransaction(
 
     await db.collection("budgets").updateOne(
       {
-        _id: new ObjectId(BudgetId),
+        _id: new ObjectId(budgetAiDi),
         UserId: new ObjectId(UserId),
       },
       {
@@ -239,23 +260,13 @@ export async function afterUpdateTransaction(
 
   // Cek budget terbaru
   const findBudgetTerbaru = (await db.collection("budgets").findOne({
-    _id: new ObjectId(BudgetId),
+    _id: new ObjectId(budgetAiDi),
     UserId: new ObjectId(UserId),
   })) as BudgetModel | null;
 
   return findBudgetTerbaru;
 }
 
-// if (findMyTransactionById.type === "income") {
-//   await budget.update({
-//     remaining: Number(remainingIncome) + Number(amount),
-//     income: Number(incomeIncome) + Number(amount),
-//   });
-// } else if (findMyTransactionById.type === "expense") {
-//   await budget.update({
-//     remaining: Number(remainingExpense) - Number(amount),
-//     spent: Number(spentExpense) + Number(amount),
-//   });
-// }
-
 // deleteMyTransaction
+
+// restoreMyTransaction

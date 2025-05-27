@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
     };
 
     const creatingBudget = await createBudget(makeBudget);
-    
 
     return NextResponse.json(
       {
@@ -80,6 +79,8 @@ export async function GET(request: NextRequest) {
     const headerList = headers();
 
     const UserId = (await headerList).get("x-user-id");
+    const userRole = (await headerList).get("x-role");
+    console.log(userRole, "ini user role di route budget");
 
     const budget = await getMyBudgets(UserId!);
 

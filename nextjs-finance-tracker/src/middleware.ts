@@ -5,7 +5,7 @@ import * as jose from "jose";
 
 export async function middleware(request: NextRequest) {
   try {
-    console.log("Masuk middleware");
+    // console.log("Masuk middleware");
 
     const cookiesAuth = (await cookies()).get("Authorization");
     // console.log(cookiesAuth, "ini cookiesAuth middleware");
@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
 
     let token = cookiesAuth.value.split(" ")[1];
 
-    console.log(token, "ini token middleware");
+    // console.log(token, "ini token middleware");
 
     const secret = new TextEncoder().encode(process.env.SECRET!);
 
@@ -25,6 +25,7 @@ export async function middleware(request: NextRequest) {
     const decoded = await jose.jwtVerify<{
       _id: string;
       username: string;
+      role: "User" | "Admin";
     }>(token, secret);
 
     // console.log(decoded, "ini decoded middleware");
@@ -35,6 +36,7 @@ export async function middleware(request: NextRequest) {
 
     reqHeaders.set("x-user-id", decoded.payload._id);
     reqHeaders.set("x-username", decoded.payload.username);
+    reqHeaders.set("x-role", decoded.payload.role);
 
     return NextResponse.next({
       request: {

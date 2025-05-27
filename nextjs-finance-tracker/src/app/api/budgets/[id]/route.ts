@@ -1,10 +1,15 @@
-import { getMyBudgetById, updateMyBudget } from "@/db/model/budget";
+import {
+  deleteMyBudget,
+  getMyBudgetById,
+  updateMyBudget,
+} from "@/db/model/budget";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { schemaCreateBudget } from "../route";
 import { z } from "zod";
 import { inflateSync } from "zlib";
 import { BudgetModel } from "@/db/type/type";
+import { checkAuthorization } from "@/db/utils/authorization";
 
 // interface BudgetParams {
 //   params: {
@@ -35,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Ambil budget berdasarkan BudgetId dan UserId
-    const findBudget = await getMyBudgetById(BudgetId, UserId);
+    const findBudget = await getMyBudgetById(BudgetId);
 
     if (!findBudget) {
       throw new Error("Budget not found");
@@ -97,10 +102,7 @@ export async function PUT(request: NextRequest) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
-    const findBudget = (await getMyBudgetById(
-      BudgetId,
-      UserId
-    )) as BudgetModel | null;
+    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel | null;
     console.log(findBudget, "TES");
 
     if (!findBudget) {
@@ -185,6 +187,82 @@ export async function PUT(request: NextRequest) {
         }
       );
     } else if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          message: "Internal Server Error",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const headerList = headers();
+    const UserId = (await headerList).get("x-user-id");
+    const BudgetId = request.nextUrl.pathname.split("/").pop();
+    const UserRole = (await headerList).get("x-role");
+
+    if (!UserId) {
+      throw new Error("UserId not found");
+    }
+
+    if (!BudgetId) {
+      throw new Error("BudgetId not found");
+    }
+
+    if (!UserRole) {
+      throw new Error("UserRole not found");
+    }
+
+    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel | null;
+
+    if (!findBudget) {
+      throw new Error("Budget not found");
+    }
+
+    // Cek apakah user yang menghapus adalah pemilik budget atau admin
+    const authCheck = await checkAuthorization(
+      UserId,
+      UserRole,
+      findBudget.UserId.toString()
+    );
+
+    console.log(authCheck, "ini authCheck di route budget");
+
+    if (authCheck) {
+      return authCheck;
+    }
+
+    const deleteBudget = await deleteMyBudget(BudgetId);
+
+    if (deleteBudget.modifiedCount === 0) {
+      throw new Error("Failed to delete budget");
+    }
+
+    return NextResponse.json(
+      {
+        message: "Successfully delete budget",
+        data: deleteBudget,
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
       return NextResponse.json(
         {
           message: error.message,

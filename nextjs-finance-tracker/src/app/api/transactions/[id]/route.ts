@@ -117,6 +117,7 @@ export async function PUT(request: NextRequest) {
     if (!findTransaction) {
       throw new Error("Transaction not found");
     }
+    const nilaiTransactionLama = findTransaction[0].amount;
 
     if (findTransaction[0].Budget === null) {
       throw new Error("Budget already deleted");
@@ -148,19 +149,22 @@ export async function PUT(request: NextRequest) {
 
     if (updateTransaction.modifiedCount === 0) {
       throw new Error("Failed to update transaction");
+    } else {
+      console.log("Masuk ke else update transaction");
+
+      const updateBudgetAfterUpdateTransaction = await afterUpdateTransaction(
+        findTransaction[0].BudgetId,
+        UserId,
+        data,
+        TransactionId,
+        nilaiTransactionLama
+      );
+      console.log(updateBudgetAfterUpdateTransaction, "ini updateBud");
+
+      if (!updateBudgetAfterUpdateTransaction) {
+        throw new Error("Failed to update budget");
+      }
     }
-
-    // const updateBudgetAfterUpdateTransaction = await afterUpdateTransaction(
-    //   findTransaction[0].BudgetId,
-    //   UserId,
-    //   data,
-    //   TransactionId
-    // );
-    // console.log(updateBudgetAfterUpdateTransaction, "ini updateBud");
-
-    // if (!updateBudgetAfterUpdateTransaction) {
-    //   throw new Error("Failed to update budget");
-    // }
 
     return NextResponse.json(
       {

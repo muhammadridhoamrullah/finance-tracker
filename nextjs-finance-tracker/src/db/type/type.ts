@@ -2,12 +2,15 @@ export interface UserModel {
   _id: string;
   firstName: string;
   lastName: string;
+  role: "User" | "Admin";
   email: string;
   password: string;
   phoneNumber: string;
   address: string;
   createdAt: Date;
   updatedAt: Date;
+  isDeleted: boolean;
+  deletedAt: Date | null;
 }
 export interface BudgetModel {
   _id: string;
@@ -21,6 +24,8 @@ export interface BudgetModel {
   remaining: number;
   createdAt: Date;
   updatedAt: Date;
+  deltedAt: Date | null;
+  isDeleted: boolean;
 }
 
 export interface TransactionModel {
@@ -34,6 +39,6 @@ export interface TransactionModel {
   BudgetId: string;
   createdAt: Date;
   updatedAt: Date;
+  deltedAt: Date | null;
+  isDeleted: boolean;
 }
-
-

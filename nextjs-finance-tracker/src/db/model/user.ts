@@ -3,7 +3,10 @@ import { comparePassword, hashPassword } from "../helpers/bcrypt";
 import { signToken } from "../helpers/jwt";
 import { UserModel } from "../type/type";
 
-type UserModelInput = Omit<UserModel, "_id" | "createdAt" | "updatedAt">;
+type UserModelInput = Omit<
+  UserModel,
+  "_id" | "createdAt" | "updatedAt" | "isDeleted" | "deletedAt"
+>;
 type UserModelLogin = Pick<UserModel, "email" | "password">;
 const COLLECTION_NAME = "users";
 
@@ -29,6 +32,7 @@ export async function createUser(user: UserModelInput) {
   const newUser = {
     ...user,
     password: hashPassword(user.password),
+    role: "User",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -63,6 +67,7 @@ export async function loginUser(user: UserModelLogin) {
   const access_token = signToken({
     _id: checkUser._id,
     email: checkUser.email,
+    role: checkUser.role,
   });
 
   return access_token;
