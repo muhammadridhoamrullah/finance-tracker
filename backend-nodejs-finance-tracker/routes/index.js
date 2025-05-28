@@ -1,7 +1,10 @@
 const { Controller } = require("../controllers/controller");
 const { authentication } = require("../middlewares/authentication");
 const { authorizationAdmin } = require("../middlewares/authorizationAdmin");
-const { authorizationBudget } = require("../middlewares/authorizationBudget");
+const {
+  authorizationBudget,
+  authorizationBudgetForRestore,
+} = require("../middlewares/authorizationBudget");
 const {
   authorizationTransaction,
 } = require("../middlewares/authorizationTransaction");
@@ -23,7 +26,7 @@ router.put("/budget/:id", authorizationBudget, Controller.updateMyBudget);
 router.delete("/budget/:id", authorizationBudget, Controller.deleteMyBudget);
 router.patch(
   "/budget/restore/:id",
-  authorizationBudget,
+  authorizationBudgetForRestore,
   Controller.restoreMyBudget
 );
 

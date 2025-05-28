@@ -2,7 +2,8 @@ const e = require("express");
 const { comparePassword } = require("../helpers/bcrypt");
 const { SignToken } = require("../helpers/jwt");
 const { User, Budget, Transaction } = require("../models/index");
-const { or } = require("sequelize");
+const { or, Op } = require("sequelize");
+const { redis } = require("../config/redis");
 
 class Controller {
   static async login(req, res, next) {
@@ -100,6 +101,10 @@ class Controller {
         remaining: amount,
       });
 
+      // Hapus cache Redis jika ada
+      await redis.del("budgets:all");
+      await redis.del("budgets:admin:all");
+
       res.status(201).json({
         message: "Budget Created Successfully",
       });
@@ -111,16 +116,25 @@ class Controller {
   static async getMyBudget(req, res, next) {
     try {
       const UserId = req.user.id;
+      const getMyBudgetFromRedis = await redis.get("budgets:all");
+      console.log(getMyBudgetFromRedis, "<<< getMyBudgetFromRedis <<<");
+
+      if (getMyBudgetFromRedis) {
+        const budgets = JSON.parse(getMyBudgetFromRedis);
+        return res.status(200).json({
+          budgets,
+        });
+      }
 
       const budgets = await Budget.findAll({
         where: {
           UserId,
         },
         order: [["createdAt", "ASC"]],
-
         include: [
           {
             model: Transaction,
+            order: [["createdAt", "ASC"]],
           },
           {
             model: User,
@@ -135,6 +149,9 @@ class Controller {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
+      // Simpan ke Redis
+      await redis.set("budgets:all", JSON.stringify(budgets));
+
       res.status(200).json({
         budgets,
       });
@@ -145,9 +162,17 @@ class Controller {
 
   static async getMyBudgetById(req, res, next) {
     try {
-      const UserId = req.user.id;
-
       const { id } = req.params;
+
+      const getMyBudgetByIdFromRedis = await redis.get(`budget:${id}`);
+      console.log(getMyBudgetByIdFromRedis, "<<< getMyBudgetByIdFromRedis <<<");
+
+      if (getMyBudgetByIdFromRedis) {
+        const budget = JSON.parse(getMyBudgetByIdFromRedis);
+        return res.status(200).json({
+          findBudgetById: budget,
+        });
+      }
 
       const findBudgetById = await Budget.findOne({
         where: {
@@ -156,6 +181,7 @@ class Controller {
         include: [
           {
             model: Transaction,
+            order: [["createdAt", "ASC"]],
           },
           {
             model: User,
@@ -170,6 +196,9 @@ class Controller {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
+      // Simpan ke Redis
+      await redis.set(`budget:${id}`, JSON.stringify(findBudgetById));
+
       res.status(200).json({
         findBudgetById,
       });
@@ -180,8 +209,6 @@ class Controller {
 
   static async updateMyBudget(req, res, next) {
     try {
-      const UserId = req.user.id;
-
       const { id } = req.params;
 
       const { name, amount, startDate, endDate } = req.body;
@@ -196,7 +223,6 @@ class Controller {
           },
         ],
       });
-      console.log(findBudgetById, "<<< findBudgetById <<<");
 
       if (findBudgetById.Transactions.length > 0) {
         throw { name: "BUDGET_CANT_BE_UPDATED" };
@@ -207,22 +233,20 @@ class Controller {
       }
 
       // Cek jika startDate lebih besar dari endDate
-      if (new Date(startDate) > new Date(endDate)) {
-        throw { name: "STARTDATE_INVALID" };
-      }
+      if (
+        new Date(startDate) > new Date(endDate) ||
+        new Date(startDate) > new Date(findBudgetById.endDate)
+      ) {
+        console.log("sini");
 
-      // Cek jika startDate lebih besar dari endDate di data yang sudah ada
-      if (new Date(startDate) > new Date(findBudgetById.endDate)) {
         throw { name: "STARTDATE_INVALID" };
       }
 
       // Cek jika endDate lebih kecil dari startDate
-      if (new Date(endDate) < new Date(startDate)) {
-        throw { name: "ENDDATE_INVALID" };
-      }
-
-      // Cek jika endDate lebih kecil dari startDate di data yang sudah ada
-      if (new Date(endDate) < new Date(findBudgetById.startDate)) {
+      if (
+        new Date(endDate) < new Date(startDate) ||
+        new Date(endDate) < new Date(findBudgetById.startDate)
+      ) {
         throw { name: "ENDDATE_INVALID" };
       }
 
@@ -246,6 +270,11 @@ class Controller {
         throw { name: "ERROR_UPDATE_BUDGET" };
       }
 
+      // Hapus cache Redis jika ada
+      await redis.del("budgets:all");
+      await redis.del(`budget:${id}`);
+      await redis.del("budgets:admin:all");
+
       res.status(200).json({
         message: "Budget Updated Successfully",
       });
@@ -256,8 +285,6 @@ class Controller {
 
   static async deleteMyBudget(req, res, next) {
     try {
-      const UserId = req.user.id;
-
       const { id } = req.params;
 
       const findBudgetById = await Budget.findOne({
@@ -285,6 +312,40 @@ class Controller {
         throw { name: "ERROR_DELETE_BUDGET" };
       }
 
+      // Jika budget memiliki transaksi, hapus transaksi tersebut
+      if (findBudgetById.Transactions.length > 0) {
+        await Transaction.destroy({
+          where: {
+            BudgetId: id,
+          },
+        });
+      }
+
+      console.log(
+        findBudgetById.Transactions.id,
+        "<<< findBudgetById.Transactions.id <<<"
+      );
+      console.log(
+        findBudgetById.Transactions[0].id,
+        "<<< findBudgetById.Transactions[0].id <<<"
+      );
+
+      // Hapus cache Redis jika ada
+      await redis.del("budgets:all");
+      await redis.del(`budget:${id}`);
+      await redis.del("budgets:admin:all");
+      await redis.del("transactions:all");
+
+      if (findBudgetById.Transactions.length > 0) {
+        const transactionId = findBudgetById.Transactions.map((el) => el.id);
+        console.log(transactionId, "<<< transactionId <<<");
+
+        const deletePromises = transactionId.map((id) =>
+          redis.del(`transaction:${id}`)
+        );
+        await Promise.all(deletePromises);
+      }
+
       res.status(200).json({
         message: "Budget Deleted Successfully",
       });
@@ -295,7 +356,6 @@ class Controller {
 
   static async restoreMyBudget(req, res, next) {
     try {
-      const UserId = req.user.id;
       const { id } = req.params;
 
       const findBudgetById = await Budget.findOne({
@@ -303,13 +363,53 @@ class Controller {
           id,
         },
         paranoid: false,
+        include: [
+          {
+            model: Transaction,
+            paranoid: false,
+          },
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+          },
+        ],
       });
 
       if (findBudgetById === null) {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
-      await Budget.restore();
+      if (findBudgetById.deletedAt === null) {
+        throw { name: "CANT_DOUBLE_RESTORED_BUDGET" };
+      }
+
+      const waktuDelete = new Date(findBudgetById.deletedAt);
+
+      await Budget.restore({
+        where: {
+          id,
+        },
+      });
+
+      await Transaction.restore({
+        where: {
+          BudgetId: id,
+          deletedAt: {
+            [Op.between]: [
+              new Date(waktuDelete.getTime() - 1000),
+              new Date(waktuDelete.getTime() + 1000),
+            ],
+          },
+        },
+      });
+
+      // Hapus cache Redis jika ada
+      await redis.del("budgets:all");
+      await redis.del(`budget:${id}`);
+      await redis.del("budgets:admin:all");
+      await redis.del("transactions:all");
 
       res.status(200).json({
         message: "Budget Restored Successfully",
@@ -319,6 +419,7 @@ class Controller {
       next(error);
     }
   }
+  // Redis disini masih perbaiki
   // Akhir Budget
 
   // Awal Transaction
@@ -385,6 +486,19 @@ class Controller {
     try {
       const UserId = req.user.id;
 
+      const getMyTransactionFromRedis = await redis.get("transactions:all");
+      console.log(
+        getMyTransactionFromRedis,
+        "<<< getMyTransactionFromRedis <<<"
+      );
+
+      if (getMyTransactionFromRedis) {
+        const transactions = JSON.parse(getMyTransactionFromRedis);
+        return res.status(200).json({
+          myTransaction: transactions,
+        });
+      }
+
       const myTransaction = await Transaction.findAll({
         where: {
           UserId,
@@ -407,6 +521,9 @@ class Controller {
         throw { name: "TRANSACTION_NOT_FOUND" };
       }
 
+      // Simpan ke Redis
+      await redis.set("transactions:all", JSON.stringify(myTransaction));
+
       res.status(200).json({
         myTransaction,
       });
@@ -417,9 +534,23 @@ class Controller {
 
   static async getMyTransactionById(req, res, next) {
     try {
-      const UserId = req.user.id;
-
       const { id } = req.params;
+
+      const getMyTransactionByIdFromRedis = await redis.get(
+        `transaction:${id}`
+      );
+      console.log(
+        getMyTransactionByIdFromRedis,
+        "<<< getMyTransactionByIdFromRedis <<<"
+      );
+
+      if (getMyTransactionByIdFromRedis) {
+        const transaction = JSON.parse(getMyTransactionByIdFromRedis);
+
+        return res.status(200).json({
+          findMyTransactionById: transaction,
+        });
+      }
 
       const findMyTransactionById = await Transaction.findOne({
         where: {
@@ -442,6 +573,12 @@ class Controller {
         throw { name: "TRANSACTION_NOT_FOUND" };
       }
 
+      // Simpan ke Redis
+      await redis.set(
+        `transaction:${id}`,
+        JSON.stringify(findMyTransactionById)
+      );
+
       res.status(200).json({
         findMyTransactionById,
       });
@@ -452,8 +589,6 @@ class Controller {
 
   static async updateMyTransaction(req, res, next) {
     try {
-      const UserId = req.user.id;
-
       const { id } = req.params;
 
       const { amount, category, type, date, description } = req.body;
@@ -480,11 +615,6 @@ class Controller {
         throw { name: "TRANSACTION_NOT_FOUND" };
       }
 
-      // // Cek jika angka yang diinput lebih besar dari pada sisa budget
-      // if (amount > findMyTransactionById.Budget.remaining) {
-      //   throw { name: "BUDGET_NOT_ENOUGH" };
-      // }
-
       // Cek jika tanggal yang diinput lebih kecil dari pada tanggal Start Date Budget
       if (new Date(date) < new Date(findMyTransactionById.Budget.startDate)) {
         throw { name: "UPDATE_DATE_TRANSACTION_LESSER" };
@@ -496,8 +626,13 @@ class Controller {
       }
 
       // Cek jika transaksi type expense
-      if (findMyTransactionById.type === "expense") {
-        if (amount > findMyTransactionById.Budget.remaining) {
+      const isExpense = findMyTransactionById.type === "expense";
+      const transaksiLamaDitambahRemaining =
+        Number(findMyTransactionById.amount) +
+        Number(findMyTransactionById.Budget.remaining);
+
+      if (isExpense) {
+        if (Number(amount) > transaksiLamaDitambahRemaining) {
           throw { name: "BUDGET_NOT_ENOUGH" };
         }
       }
@@ -559,6 +694,10 @@ class Controller {
         });
       }
 
+      // Hapus cache Redis jika ada
+      await redis.del("transactions:all");
+      await redis.del(`transaction:${id}`);
+
       res.status(200).json({
         message: "Transaction Updated Successfully",
       });
@@ -569,8 +708,6 @@ class Controller {
 
   static async deleteMyTransaction(req, res, next) {
     try {
-      const UserId = req.user.id;
-
       const { id } = req.params;
 
       const findMyTransactionById = await Transaction.findOne({
@@ -583,7 +720,6 @@ class Controller {
           },
         ],
       });
-      console.log(findMyTransactionById, "ini sebelum delete");
 
       if (findMyTransactionById === null) {
         throw { name: "TRANSACTION_NOT_FOUND" };
@@ -594,7 +730,6 @@ class Controller {
           id,
         },
       });
-      console.log(deleteTransaction, "ini delete transaction");
 
       if (deleteTransaction === 0) {
         throw { name: "ERROR_DELETE_TRANSACTION" };
@@ -622,6 +757,10 @@ class Controller {
         });
       }
 
+      // Hapus cache Redis jika ada
+      await redis.del("transactions:all");
+      await redis.del(`transaction:${id}`);
+
       res.status(200).json({
         message: "Transaction Deleted Successfully",
         data: budget,
@@ -633,7 +772,6 @@ class Controller {
 
   static async restoreMyTransaction(req, res, next) {
     try {
-      const UserId = req.user.id;
       const { id } = req.params;
 
       const findMyTransactionById = await Transaction.findOne({
@@ -657,6 +795,10 @@ class Controller {
 
       if (findMyTransactionById === null) {
         throw { name: "TRANSACTION_NOT_FOUND" };
+      }
+
+      if (findMyTransactionById.deletedAt === null) {
+        throw { name: "CANT_DOUBLE_RESTORED_TRANSACTION" };
       }
 
       await Transaction.restore({
@@ -690,6 +832,10 @@ class Controller {
         });
       }
 
+      // Hapus cache Redis jika ada
+      await redis.del("transactions:all");
+      await redis.del(`transaction:${id}`);
+
       res.status(200).json({
         message: "Transaction Restored Successfully",
       });
@@ -704,6 +850,20 @@ class Controller {
 
   static async getAllBudget(req, res, next) {
     try {
+      const getAllBudgetByAdminFromRedis = await redis.get("budgets:admin:all");
+      console.log(
+        getAllBudgetByAdminFromRedis,
+        "<<< getAllBudgetByAdminFromRedis <<<"
+      );
+
+      if (getAllBudgetByAdminFromRedis) {
+        const budgets = JSON.parse(getAllBudgetByAdminFromRedis);
+
+        return res.status(200).json({
+          budgets,
+        });
+      }
+
       const findAllBudget = await Budget.findAll({
         include: [
           {
@@ -726,6 +886,9 @@ class Controller {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
+      // Simpan ke Redis
+      await redis.set("budgets:admin:all", JSON.stringify(findAllBudget));
+
       res.status(200).json({
         budgets: findAllBudget,
       });
@@ -736,6 +899,22 @@ class Controller {
 
   static async getAllTransaction(req, res, next) {
     try {
+      const getAllTransactionByAdminFromRedis = await redis.get(
+        "transactions:admin:all"
+      );
+      console.log(
+        getAllTransactionByAdminFromRedis,
+        "<<< getAllTransactionByAdminFromRedis <<<"
+      );
+
+      if (getAllTransactionByAdminFromRedis) {
+        const transactions = JSON.parse(getAllTransactionByAdminFromRedis);
+
+        return res.status(200).json({
+          transactions,
+        });
+      }
+
       const findAllTransaction = await Transaction.findAll({
         include: [
           {
@@ -757,6 +936,12 @@ class Controller {
       if (findAllTransaction.length === 0) {
         throw { name: "TRANSACTION_NOT_FOUND" };
       }
+
+      // Simpan ke Redis
+      await redis.set(
+        "transactions:admin:all",
+        JSON.stringify(findAllTransaction)
+      );
 
       res.status(200).json({
         transactions: findAllTransaction,

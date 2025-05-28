@@ -72,6 +72,14 @@ async function errorHandling(err, req, res, next) {
     res
       .status(403)
       .json({ message: "You are not allowed to access this resource" });
+  } else if (err.name === "CANT_DOUBLE_RESTORED_TRANSACTION") {
+    res.status(400).json({
+      message: "Transaction not deleted, can't double restored",
+    });
+  } else if (err.name === "CANT_DOUBLE_RESTORED_BUDGET") {
+    res.status(400).json({
+      message: "Budget not deleted, can't double restored",
+    });
   }
 }
 
