@@ -68,6 +68,8 @@ class Controller {
         address,
       });
 
+      // Hapus cache Redis jika ada
+
       res.status(201).json({
         message: "User created successfully",
       });
@@ -274,6 +276,19 @@ class Controller {
       await redis.del("budgets:all");
       await redis.del(`budget:${id}`);
       await redis.del("budgets:admin:all");
+      await redis.del("transactions:all");
+      await redis.del("transactions:admin:all");
+
+      // Jika ada transaksi didalam budget
+      if (findBudgetById.Transactions.length > 0) {
+        const transactionId = findBudgetById.Transactions.map((el) => el.id);
+        console.log(transactionId, "<<< transactionId <<<");
+
+        const deletePromises = transactionId.map((id) =>
+          redis.del(`transaction:${id}`)
+        );
+        await Promise.all(deletePromises);
+      }
 
       res.status(200).json({
         message: "Budget Updated Successfully",
@@ -301,6 +316,9 @@ class Controller {
       if (findBudgetById === null) {
         throw { name: "BUDGET_NOT_FOUND" };
       }
+      console.log(findBudgetById, "<<< findBudgetById <<<");
+
+      const isBudgetHasTransactions = findBudgetById.Transactions.length > 0;
 
       const deleteBudget = await Budget.destroy({
         where: {
@@ -320,15 +338,6 @@ class Controller {
           },
         });
       }
-
-      console.log(
-        findBudgetById.Transactions.id,
-        "<<< findBudgetById.Transactions.id <<<"
-      );
-      console.log(
-        findBudgetById.Transactions[0].id,
-        "<<< findBudgetById.Transactions[0].id <<<"
-      );
 
       // Hapus cache Redis jika ada
       await redis.del("budgets:all");
@@ -410,6 +419,18 @@ class Controller {
       await redis.del(`budget:${id}`);
       await redis.del("budgets:admin:all");
       await redis.del("transactions:all");
+      await redis.del("transactions:admin:all");
+
+      // Jika ada transaksi didalam budget
+      if (findBudgetById.Transactions.length > 0) {
+        const transactionId = findBudgetById.Transactions.map((el) => el.id);
+        console.log(transactionId, "<<< transactionId <<<");
+
+        const deletePromises = transactionId.map((id) =>
+          redis.del(`transaction:${id}`)
+        );
+        await Promise.all(deletePromises);
+      }
 
       res.status(200).json({
         message: "Budget Restored Successfully",
@@ -419,7 +440,6 @@ class Controller {
       next(error);
     }
   }
-  // Redis disini masih perbaiki
   // Akhir Budget
 
   // Awal Transaction
@@ -471,6 +491,13 @@ class Controller {
           spent: Number(budget.spent) + Number(amount),
         });
       }
+
+      // Hapus cache Redis jika ada
+      await redis.del("transactions:all");
+      await redis.del("transactions:admin:all");
+      await redis.del("budgets:all");
+      await redis.del(`budget:${BudgetId}`);
+      await redis.del("budgets:admin:all");
 
       res.status(201).json({
         message: "Transaction Created Successfully",
@@ -697,6 +724,10 @@ class Controller {
       // Hapus cache Redis jika ada
       await redis.del("transactions:all");
       await redis.del(`transaction:${id}`);
+      await redis.del("budgets:all");
+      await redis.del(`budget:${findMyTransactionById.BudgetId}`);
+      await redis.del("budgets:admin:all");
+      await redis.del("transactions:admin:all");
 
       res.status(200).json({
         message: "Transaction Updated Successfully",
@@ -760,6 +791,10 @@ class Controller {
       // Hapus cache Redis jika ada
       await redis.del("transactions:all");
       await redis.del(`transaction:${id}`);
+      await redis.del("budgets:all");
+      await redis.del(`budget:${findMyTransactionById.BudgetId}`);
+      await redis.del("budgets:admin:all");
+      await redis.del("transactions:admin:all");
 
       res.status(200).json({
         message: "Transaction Deleted Successfully",
@@ -835,6 +870,10 @@ class Controller {
       // Hapus cache Redis jika ada
       await redis.del("transactions:all");
       await redis.del(`transaction:${id}`);
+      await redis.del("budgets:all");
+      await redis.del(`budget:${findMyTransactionById.BudgetId}`);
+      await redis.del("budgets:admin:all");
+      await redis.del("transactions:admin:all");
 
       res.status(200).json({
         message: "Transaction Restored Successfully",
@@ -952,89 +991,114 @@ class Controller {
   }
 
   // Akhir Admin
+
+  // Awal User
+
+  static async getMyProfile(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const getMyProfileFromRedis = await redis.get(`user:${UserId}`);
+
+      console.log(getMyProfileFromRedis, "<<< getMyProfileFromRedis <<<");
+
+      if (getMyProfileFromRedis) {
+        const profile = JSON.parse(getMyProfileFromRedis);
+
+        return res.status(200).json({
+          profile,
+        });
+      }
+
+      const getProfile = await User.findByPk(UserId, {
+        include: [
+          {
+            model: Budget,
+            order: [["createdAt", "ASC"]],
+            include: [
+              {
+                model: Transaction,
+                order: [["createdAt", "ASC"]],
+              },
+            ],
+          },
+          {
+            model: Transaction,
+            order: [["createdAt", "ASC"]],
+          },
+        ],
+      });
+
+      if (!getProfile) {
+        throw { name: "USER_NOT_FOUND" };
+      }
+
+      // Simpan ke Redis
+      await redis.set(`user:${UserId}`, JSON.stringify(getProfile));
+
+      res.status(200).json({
+        profile: getProfile,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getProfileById(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      const getProfileByIdFromRedis = await redis.get(`user:${id}`);
+      console.log(getProfileByIdFromRedis, "<<< getProfileByIdFromRedis <<<");
+
+      if (getProfileByIdFromRedis) {
+        const profile = JSON.parse(getProfileByIdFromRedis);
+
+        return res.status(200).json({
+          profile,
+        });
+      }
+
+      const getProfileById = await User.findByPk(id, {
+        attributes: {
+          exclude: ["password"],
+        },
+        include: [
+          {
+            model: Budget,
+            order: [["createdAt", "ASC"]],
+            include: [
+              {
+                model: Transaction,
+                order: [["createdAt", "ASC"]],
+              },
+            ],
+          },
+          {
+            model: Transaction,
+            order: [["createdAt", "ASC"]],
+          },
+        ],
+      });
+
+      if (!getProfileById) {
+        throw { name: "USER_NOT_FOUND" };
+      }
+
+      // Simpan ke Redis
+      await redis.set(`user:${id}`, JSON.stringify(getProfileById));
+
+      res.status(200).json({
+        profile: getProfileById,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Akhir User
 }
 
 module.exports = {
   Controller,
 };
-
-// {
-//   "budgets": [
-//     {
-//       "id": 2,
-//       "UserId": 4,
-//       "name": "January",
-//       "amount": 1000000,
-//       "spent": 50000,
-//       "income": 0,
-//       "startDate": "2025-01-01T00:00:00.000Z",
-//       "endDate": "2025-01-31T00:00:00.000Z",
-//       "remaining": 950000,
-//       "createdAt": "2025-05-26T08:23:00.114Z",
-//       "updatedAt": "2025-05-26T13:58:51.063Z",
-//       "deletedAt": null,
-//       "Transactions": [
-//         {
-//           "id": 2,
-//           "amount": 25000,
-//           "category": "Food",
-//           "type": "expense",
-//           "date": "2025-01-03T00:00:00.000Z",
-//           "description": "Makan Seafood",
-//           "UserId": 4,
-//           "BudgetId": 2,
-//           "createdAt": "2025-05-26T08:23:55.233Z",
-//           "updatedAt": "2025-05-26T08:24:46.681Z",
-//           "deletedAt": null
-//         },
-//         {
-//           "id": 6,
-//           "amount": 25000,
-//           "category": "Drink",
-//           "type": "expense",
-//           "date": "2025-01-03T00:00:00.000Z",
-//           "description": "Minum Es Teh",
-//           "UserId": 4,
-//           "BudgetId": 2,
-//           "createdAt": "2025-05-26T13:58:51.048Z",
-//           "updatedAt": "2025-05-26T13:58:51.048Z",
-//           "deletedAt": null
-//         }
-//       ]
-//     }
-//   ]
-// }
-
-// {
-//   "budgets": [
-//     {
-//       "id": 2,
-//       "UserId": 4,
-//       "name": "January",
-//       "amount": 1000000,
-//       "spent": 25000,
-//       "income": 0,
-//       "startDate": "2025-01-01T00:00:00.000Z",
-//       "endDate": "2025-01-31T00:00:00.000Z",
-//       "remaining": 975000,
-//       "createdAt": "2025-05-26T08:23:00.114Z",
-//       "updatedAt": "2025-05-26T13:59:51.881Z",
-//       "deletedAt": null,
-//       "Transactions": [
-//         {
-//           "id": 2,
-//           "amount": 25000,
-//           "category": "Food",
-//           "type": "expense",
-//           "date": "2025-01-03T00:00:00.000Z",
-//           "description": "Makan Seafood",
-//           "UserId": 4,
-//           "BudgetId": 2,
-//           "createdAt": "2025-05-26T08:23:55.233Z",
-//           "updatedAt": "2025-05-26T08:24:46.681Z",
-//           "deletedAt": null
-//         }
-//       ]
-//     }
-//   ]
-// }

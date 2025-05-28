@@ -58,6 +58,10 @@ router.get(
   Controller.getAllTransaction
 );
 
+// User Profile
+router.get("/profile", Controller.getMyProfile);
+router.get("/profile/:id", Controller.getProfileById);
+
 router.use(errorHandling);
 
 module.exports = {
