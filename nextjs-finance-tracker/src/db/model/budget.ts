@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { GetDB } from "../config";
 import { BudgetModel } from "../type/type";
 import { log } from "console";
+import { isDataView } from "util/types";
 
 const COLLECTION_NAME = "budgets";
 type InputModelBudget = Pick<
@@ -36,14 +37,36 @@ export async function createBudget(input: InputModelBudget) {
 export async function getMyBudgets(UserId: string) {
   const db = await GetDB();
 
-  const budgets = await db
-    .collection(COLLECTION_NAME)
-    .find({
-      isDeleted: { $ne: true },
-      UserId: new ObjectId(UserId),
-    })
-    .sort({ createdAt: 1 })
-    .toArray();
+  const agg = [
+    {
+      $match: {
+        UserId: new ObjectId(UserId),
+        isDeleted: {
+          $ne: true,
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "UserId",
+        foreignField: "_id",
+        as: "User",
+      },
+    },
+    {
+      $unwind: {
+        path: "$User",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        "User.password": 0,
+      },
+    },
+  ];
+  const budgets = await db.collection(COLLECTION_NAME).aggregate(agg).toArray();
 
   return budgets;
 }
@@ -52,9 +75,40 @@ export async function getMyBudgets(UserId: string) {
 export async function getMyBudgetById(BudgetId: string) {
   const db = await GetDB();
 
-  const findMyBudget = await db.collection(COLLECTION_NAME).findOne({
-    _id: new ObjectId(BudgetId),
-  });
+  const agg = [
+    {
+      $match: {
+        _id: new ObjectId(BudgetId),
+        isDeleted: {
+          $ne: true,
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "UserId",
+        foreignField: "_id",
+        as: "User",
+      },
+    },
+    {
+      $unwind: {
+        path: "$User",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        "User.password": 0,
+      },
+    },
+  ];
+
+  const findMyBudget = await db
+    .collection(COLLECTION_NAME)
+    .aggregate(agg)
+    .toArray();
 
   return findMyBudget;
 }
@@ -62,10 +116,38 @@ export async function getMyBudgetById(BudgetId: string) {
 export async function getMyBudgetByIdForRestore(BudgetId: string) {
   const db = await GetDB();
 
-  const findMyBudget = await db.collection(COLLECTION_NAME).findOne({
-    _id: new ObjectId(BudgetId),
-    isDeleted: true,
-  });
+  const agg = [
+    {
+      $match: {
+        _id: new ObjectId(BudgetId),
+        isDeleted: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "UserId",
+        foreignField: "_id",
+        as: "User",
+      },
+    },
+    {
+      $unwind: {
+        path: "$User",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        "User.password": 0,
+      },
+    },
+  ];
+
+  const findMyBudget = await db
+    .collection(COLLECTION_NAME)
+    .aggregate(agg)
+    .toArray();
 
   return findMyBudget;
 }
@@ -122,10 +204,14 @@ export async function softDeleteTransactionAfterDeleteBudget(BudgetId: string) {
   const softDeleteTransaction = await db.collection("transactions").updateMany(
     {
       BudgetId: new ObjectId(BudgetId),
+      isDeletedByBudget: false,
+      isDeleted: false,
     },
     {
       $set: {
         isDeleted: true,
+        isDeletedByBudget: true,
+        updatedAt: new Date(),
         deletedAt: new Date(),
       },
     }
@@ -162,10 +248,12 @@ export async function restoreTransactionAfterRestoreBudget(BudgetId: string) {
     {
       BudgetId: new ObjectId(BudgetId),
       isDeleted: true,
+      isDeletedByBudget: true,
     },
     {
       $set: {
         isDeleted: false,
+        isDeletedByBudget: false,
         deletedAt: null,
         updatedAt: new Date(),
       },

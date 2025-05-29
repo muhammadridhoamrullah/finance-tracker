@@ -15,12 +15,6 @@ import { inflateSync } from "zlib";
 import { BudgetModel } from "@/db/type/type";
 import { checkAuthorization } from "@/db/utils/authorization";
 
-// interface BudgetParams {
-//   params: {
-//     id: string;
-//   };
-// }
-
 export async function GET(request: NextRequest) {
   try {
     // Ambil UserId dari header
@@ -33,20 +27,16 @@ export async function GET(request: NextRequest) {
       throw new Error("UserId not found");
     }
 
-    // const BudgetId = params.id;
-    // console.log(BudgetId, "ini BudgetId");
-
     const BudgetId = request.nextUrl.pathname.split("/").pop();
-    console.log(BudgetId, "ini BudgetId");
 
     if (!BudgetId) {
       throw new Error("BudgetId not found");
     }
 
     // Ambil budget berdasarkan BudgetId dan UserId
-    const findBudget = await getMyBudgetById(BudgetId);
+    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel[];
 
-    if (!findBudget) {
+    if (findBudget.length === 0) {
       throw new Error("Budget not found");
     }
 
@@ -106,60 +96,17 @@ export async function PUT(request: NextRequest) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
-    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel | null;
-    console.log(findBudget, "TES");
+    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel[];
 
-    if (!findBudget) {
+    if (findBudget.length === 0) {
       throw new Error("Budget not found");
     }
 
-    //     {
-    //   _id: new ObjectId('682f23c06a86ea8561ed6961'),
-    //   name: 'March 23',
-    //   amount: 1000000,
-    //   startDate: '2025-03-01',
-    //   endDate: '2025-03-30',
-    //   UserId: new ObjectId('6819ac414f3b3d61b90759d7'),
-    //   spent: 0,
-    //   income: 0,
-    //   remaining: 1000000,
-    //   createdAt: 2025-05-22T13:16:48.088Z,
-    //   updatedAt: 2025-05-22T14:00:00.635Z
-    // } TES
-
-    // Check terlebih dahulu
-
-    // if (findBudget.Transactions.length > 0) {
-    //   throw new Error(
-    //     "Can't edit because this budget already has transactions"
-    //   );
-    // }
-
     // Sementara ini dulu
-    if (findBudget.income > 0 || findBudget.spent > 0) {
+    if (findBudget[0].income > 0 || findBudget[0].spent > 0) {
       throw new Error(
         "Can't edit because this budget already has transactions"
       );
-    }
-
-    // Cek jika startDate lebih besar dari endDate
-    if (data.startDate > data.endDate) {
-      throw new Error("Start date must be less than end date");
-    }
-
-    // Cek jika startDate lebih besar dari endDate di data yang sudah ada
-    if (data.startDate > findBudget.endDate) {
-      throw new Error("Start date must be less than end date");
-    }
-
-    // Cek jika endDate lebih kecil dari startDate
-    if (data.endDate < data.startDate) {
-      throw new Error("End date must be greater than start date");
-    }
-
-    // Cek jika endDate lebih kecil dari startDate di data yang sudah ada
-    if (data.endDate < findBudget.startDate) {
-      throw new Error("End date must be greater than start date");
     }
 
     const editBudget = await updateMyBudget(BudgetId, data, UserId);
@@ -231,25 +178,21 @@ export async function DELETE(request: NextRequest) {
       throw new Error("UserRole not found");
     }
 
-    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel | null;
-    console.log(findBudget, "findBudget di route budget");
+    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel[];
 
-    if (!findBudget) {
+    if (findBudget.length === 0) {
       throw new Error("Budget not found");
     }
 
     const isAlreadyHaveTransaction =
-      findBudget.income > 0 || findBudget.spent > 0;
-    console.log(isAlreadyHaveTransaction, "isAlreadyHaveTransaction");
+      findBudget[0].income > 0 || findBudget[0].spent > 0;
 
     // Cek apakah user yang menghapus adalah pemilik budget atau admin
     const authCheck = await checkAuthorization(
       UserId,
       UserRole,
-      findBudget.UserId.toString()
+      findBudget[0].UserId.toString()
     );
-
-    console.log(authCheck, "ini authCheck di route budget");
 
     if (authCheck) {
       return authCheck;
@@ -316,17 +259,20 @@ export async function PATCH(request: NextRequest) {
 
     const findBudget = (await getMyBudgetByIdForRestore(
       BudgetId
-    )) as BudgetModel | null;
+    )) as BudgetModel[];
 
-    if (!findBudget) throw new Error("Budget not found or not deleted");
+    if (findBudget.length === 0) {
+      throw new Error("Budget not found or already restored");
+    }
+
     const isAlreadyHaveTransaction =
-      findBudget.income > 0 || findBudget.spent > 0;
+      findBudget[0].income > 0 || findBudget[0].spent > 0;
 
     // Cek apakah user yang menghapus adalah pemilik budget atau admin
     const authCheck = await checkAuthorization(
       UserId,
       UserRole,
-      findBudget.UserId.toString()
+      findBudget[0].UserId.toString()
     );
 
     if (authCheck) {

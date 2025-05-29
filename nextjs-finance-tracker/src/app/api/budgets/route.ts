@@ -4,12 +4,16 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-export const schemaCreateBudget = z.object({
-  name: z.string(),
-  amount: z.number(),
-  startDate: z.string().transform((date) => new Date(date)),
-  endDate: z.string().transform((date) => new Date(date)),
-});
+export const schemaCreateBudget = z
+  .object({
+    name: z.string(),
+    amount: z.number(),
+    startDate: z.string().transform((date) => new Date(date)),
+    endDate: z.string().transform((date) => new Date(date)),
+  })
+  .refine((data) => new Date(data.startDate) < new Date(data.endDate), {
+    message: "Start date must be before end date",
+  });
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +21,10 @@ export async function POST(request: NextRequest) {
     const headerList = headers();
 
     const UserId = (await headerList).get("x-user-id");
+
+    if (!UserId) {
+      throw new Error("User ID is required");
+    }
 
     const validatedData = schemaCreateBudget.safeParse(data);
 
@@ -26,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     const makeBudget = {
       ...data,
-      UserId: new ObjectId(UserId!),
+      UserId: new ObjectId(UserId),
     };
 
     const creatingBudget = await createBudget(makeBudget);
@@ -79,10 +87,12 @@ export async function GET(request: NextRequest) {
     const headerList = headers();
 
     const UserId = (await headerList).get("x-user-id");
-    const userRole = (await headerList).get("x-role");
-    console.log(userRole, "ini user role di route budget");
 
-    const budget = await getMyBudgets(UserId!);
+    if (!UserId) {
+      throw new Error("User ID is required");
+    }
+
+    const budget = await getMyBudgets(UserId);
 
     if (budget.length === 0) {
       throw new Error("There is no budget");

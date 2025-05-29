@@ -59,6 +59,9 @@ export async function createTransaction(input: InputTransactionModel) {
 
   const createNewTransaction = await db.collection(COLLECTION_NAME).insertOne({
     ...input,
+    isDeletedByBudget: false,
+    isDeleted: false,
+    deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -116,6 +119,7 @@ export async function getMyTransactionById(TransactionId: string) {
     {
       $match: {
         _id: new ObjectId(TransactionId),
+        isDeleted: { $ne: true },
       },
     },
     {

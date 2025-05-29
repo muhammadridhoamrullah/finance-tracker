@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
       throw validateData.error;
     }
 
-    const createingUser = await createUser(data);
-    console.log(createingUser, "ini create user API");
+    const creatingUser = await createUser(data);
 
     return NextResponse.json(
       {

@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.log(error, "ini error zod API");
-
       const path = error.issues[0].path[0];
       const message = error.issues[0].message;
 
