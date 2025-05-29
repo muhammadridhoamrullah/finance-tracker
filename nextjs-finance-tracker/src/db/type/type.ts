@@ -39,6 +39,7 @@ export interface TransactionModel {
   BudgetId: string;
   createdAt: Date;
   updatedAt: Date;
-  deltedAt: Date | null;
+  deletedAt: Date | null;
   isDeleted: boolean;
+  isDeletedByBudget: boolean;
 }

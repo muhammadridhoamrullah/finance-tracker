@@ -41,23 +41,15 @@ interface TransactionModel2 {
 
 export async function GET(request: NextRequest) {
   try {
-    const headerList = headers();
-
-    const UserId = (await headerList).get("x-user-id");
-
     const TransactionId = request.nextUrl.pathname.split("/").pop();
 
     if (!TransactionId) {
       throw new Error("TransactionId not found");
     }
 
-    if (!UserId) {
-      throw new Error("UserId not found");
-    }
-
     const findTransaction = await getMyTransactionById(TransactionId);
 
-    if (!findTransaction) {
+    if (findTransaction.length === 0) {
       throw new Error("Transaction not found");
     }
 
@@ -99,6 +91,11 @@ export async function PUT(request: NextRequest) {
 
     const UserId = (await headerList).get("x-user-id");
     const TransactionId = request.nextUrl.pathname.split("/").pop();
+    const UserRole = await (await headerList).get("x-role");
+
+    if (!UserRole) {
+      throw new Error("UserRole not found");
+    }
 
     if (!UserId) {
       throw new Error("UserId not found");
@@ -116,19 +113,14 @@ export async function PUT(request: NextRequest) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
-    const findTransaction = (await getMyTransactionById(TransactionId)) as
-      | TransactionModel2[]
-      | null;
-    console.log(findTransaction, "ini findTransaction API PUT");
+    const findTransaction = (await getMyTransactionById(
+      TransactionId
+    )) as TransactionModel2[];
 
-    if (!findTransaction) {
+    if (findTransaction.length === 0) {
       throw new Error("Transaction not found");
     }
     const nilaiTransactionLama = findTransaction[0].amount;
-
-    if (findTransaction[0].Budget === null) {
-      throw new Error("Budget already deleted");
-    }
 
     // Cek jika inputan date lebih kecil dari startDate pada budget
     if (new Date(data.date) < new Date(findTransaction[0].Budget.startDate)) {
@@ -146,19 +138,26 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Check authorization
+    const authCheck = await checkAuthorization(
+      UserId,
+      UserRole,
+      findTransaction[0].UserId.toString()
+    );
+
+    if (authCheck) {
+      return authCheck;
+    }
+
     const updateTransaction = await updateMyTransaction(
       TransactionId,
       data,
-      UserId,
-      findTransaction[0].BudgetId
+      UserId
     );
-    console.log(updateTransaction, "ini update Trans");
 
     if (updateTransaction.modifiedCount === 0) {
       throw new Error("Failed to update transaction");
     } else {
-      console.log("Masuk ke else update transaction");
-
       const updateBudgetAfterUpdateTransaction = await afterUpdateTransaction(
         findTransaction[0].BudgetId,
         UserId,
@@ -166,7 +165,6 @@ export async function PUT(request: NextRequest) {
         TransactionId,
         nilaiTransactionLama
       );
-      console.log(updateBudgetAfterUpdateTransaction, "ini updateBud");
 
       if (!updateBudgetAfterUpdateTransaction) {
         throw new Error("Failed to update budget");
@@ -223,7 +221,6 @@ export async function DELETE(request: NextRequest) {
     const UserId = (await headerList).get("x-user-id");
     const TransactionId = request.nextUrl.pathname.split("/").pop();
     const UserRole = (await headerList).get("x-role");
-    console.log(TransactionId, "TransactionId API DEL");
 
     if (!UserId) {
       throw new Error("UserId not found");
@@ -238,12 +235,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Cari transaksi berdasarkan TransactionId
-    const findTransaction = (await getMyTransactionById(TransactionId)) as
-      | TransactionModel2[]
-      | null;
+    const findTransaction = (await getMyTransactionById(
+      TransactionId
+    )) as TransactionModel2[];
     console.log(findTransaction, "findTransaction API DEL");
 
-    if (!findTransaction) {
+    if (findTransaction.length === 0) {
       throw new Error("Transaction not found");
     }
 
@@ -276,7 +273,6 @@ export async function DELETE(request: NextRequest) {
       typeTransaction,
       oldAmount
     );
-    console.log(updatedBudget, "update budget line 273 API DEL tRANS");
 
     if (updatedBudget?.modifiedCount === 0) {
       throw new Error("Failed to update budget");
@@ -326,14 +322,14 @@ export async function PATCH(request: NextRequest) {
 
     const findTransaction = (await getMyTransactionByIdForRestore(
       TransactionId
-    )) as TransactionModel2 | null;
+    )) as TransactionModel2[];
 
-    if (!findTransaction) {
+    if (findTransaction.length === 0) {
       throw new Error("Transaction not found");
     }
-    const BudgetId = findTransaction.BudgetId.toString();
-    const typeTransaction = findTransaction.type;
-    const amountDeletedTransaction = findTransaction.amount;
+    const BudgetId = findTransaction[0].BudgetId.toString();
+    const typeTransaction = findTransaction[0].type;
+    const amountDeletedTransaction = findTransaction[0].amount;
 
     const findBudget = await getMyBudgetById(BudgetId);
 
@@ -344,7 +340,7 @@ export async function PATCH(request: NextRequest) {
     const authCheck = await checkAuthorization(
       UserId,
       UserRole,
-      findTransaction.UserId.toString()
+      findTransaction[0].UserId.toString()
     );
 
     if (authCheck) {

@@ -5,7 +5,7 @@ export async function checkAuthorization(
   UserRole: string,
   TargetUserId: string
 ) {
-  if (UserRole !== "Admin") return null;
+  if (UserRole === "Admin") return null;
 
   if (UserId === TargetUserId) return null;
 

@@ -1,4 +1,6 @@
+import { getMyBudgetById } from "@/db/model/budget";
 import { createTransaction, getMyTransactions } from "@/db/model/transaction";
+import { BudgetModel } from "@/db/type/type";
 import { ObjectId } from "mongodb";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,15 +21,44 @@ export async function POST(request: NextRequest) {
     const headerList = headers();
     const UserId = (await headerList).get("x-user-id");
 
+    if (!UserId) {
+      throw new Error("UserId not found");
+    }
+
     const validatedData = schemaCreateTransaction.safeParse(data);
 
     if (!validatedData.success) {
       throw new z.ZodError(validatedData.error.issues);
     }
 
-    if (!UserId) {
-      throw new Error("UserId not found");
+    const findBudget = (await getMyBudgetById(data.BudgetId)) as BudgetModel[];
+
+    if (findBudget.length === 0) {
+      throw new Error("Budget not found / has been deleted");
     }
+
+    const isBeforeStartDate =
+      new Date(data.date) < new Date(findBudget[0].startDate);
+    const isAfterEndDate =
+      new Date(data.date) > new Date(findBudget[0].endDate);
+
+    if (isBeforeStartDate) {
+      throw new Error("Transaction date is before budget start date");
+    }
+
+    if (isAfterEndDate) {
+      throw new Error("Transaction date is after budget end date");
+    }
+
+    if (data.amount > findBudget[0].remaining) {
+      throw new Error("Transaction amount is greater than budget remaining");
+    }
+
+    const dataBudget = {
+      remaining: findBudget[0].remaining,
+      spent: findBudget[0].spent,
+      income: findBudget[0].income,
+    };
 
     const makeTransaction = {
       ...data,
@@ -35,7 +66,10 @@ export async function POST(request: NextRequest) {
       BudgetId: new ObjectId(data.BudgetId),
     };
 
-    const creatingTransaction = await createTransaction(makeTransaction);
+    const creatingTransaction = await createTransaction(
+      makeTransaction,
+      dataBudget
+    );
 
     return NextResponse.json(
       {
@@ -86,7 +120,11 @@ export async function GET(request: NextRequest) {
 
     const UserId = (await headerList).get("x-user-id");
 
-    const findTransactions = await getMyTransactions(UserId!);
+    if (!UserId) {
+      throw new Error("UserId not found");
+    }
+
+    const findTransactions = await getMyTransactions(UserId);
 
     if (findTransactions.length === 0) {
       throw new Error("There is no transaction");
