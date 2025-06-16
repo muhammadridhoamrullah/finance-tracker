@@ -14,7 +14,7 @@ const router = require("express").Router();
 
 router.post("/login", Controller.login);
 router.post("/register", Controller.register);
-
+router.get("/verify-email", Controller.verifyEmail);
 // Authentication
 router.use(authentication);
 
@@ -67,3 +67,34 @@ router.use(errorHandling);
 module.exports = {
   router,
 };
+
+// Fitur menarik untuk ditambahkan
+
+// 1. Transaksi Berulang (Recurring Transactions)
+// Tujuan: Otomatisasi pemasukan/pengeluaran rutin
+
+// Tambahkan field recurring (boolean), frequency (daily, weekly, monthly)
+
+// Scheduler (pakai node-cron) untuk membuat transaksi otomatis setiap periode
+
+// 2. Ringkasan & Statistik Keuangan
+// Tujuan: Memberikan insight kepada user
+
+// Total pemasukan dan pengeluaran per bulan
+
+// Endpoint seperti:
+
+// GET /summary?month=2025-06
+
+// GET /summary/yearly
+
+// Bisa hitung selisih budget dan realisasi
+
+// 3. 6. Notifikasi via Email
+// Tujuan: Memberi tahu user ketika sesuatu terjadi
+
+// Budget hampir habis
+
+// Ada transaksi besar > RpX
+
+// Implementasi: Nodemailer + cron

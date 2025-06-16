@@ -1,9 +1,14 @@
 const e = require("express");
 const { comparePassword } = require("../helpers/bcrypt");
-const { SignToken } = require("../helpers/jwt");
+const {
+  SignToken,
+  generateEmailToken,
+  verifyEmailToken,
+} = require("../helpers/jwt");
 const { User, Budget, Transaction } = require("../models/index");
 const { or, Op } = require("sequelize");
 const { redis } = require("../config/redis");
+const { sendEmail } = require("../services/emailService");
 
 class Controller {
   static async login(req, res, next) {
@@ -22,6 +27,10 @@ class Controller {
 
       if (!findUser) {
         throw { name: "EMAIL_PASSWORD_INVALID" };
+      }
+
+      if (!findUser.isVerified) {
+        throw { name: "USER_NOT_VERIFIED" };
       }
 
       const checkPassword = comparePassword(password, findUser.password);
@@ -68,10 +77,53 @@ class Controller {
         address,
       });
 
+      const token = generateEmailToken({
+        id: newUser.id,
+      });
+
+      const link = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+
+      await sendEmail(
+        newUser.email,
+        "Verify Your Email",
+        `Hi ${newUser.firstName},\n\nPlease verify your email by clicking the link below:\n${link}\n\nThank you!`
+      );
+
       // Hapus cache Redis jika ada
+      await redis.del("users:all");
+      await redis.del(`user:${newUser.id}`);
 
       res.status(201).json({
-        message: "User created successfully",
+        message:
+          "User created successfully, Please check your email to verify your account.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyEmail(req, res, next) {
+    try {
+      const { token } = req.query;
+
+      const payload = verifyEmailToken(token);
+
+      const user = await User.findByPk(payload.id);
+
+      if (!user) {
+        throw { name: "USER_NOT_FOUND" };
+      }
+
+      if (user.isVerified) {
+        throw { name: "USER_ALREADY_VERIFIED" };
+      }
+
+      await user.update({
+        isVerified: true,
+      });
+
+      res.status(200).json({
+        message: "Email verified successfully. You can now log in.",
       });
     } catch (error) {
       next(error);

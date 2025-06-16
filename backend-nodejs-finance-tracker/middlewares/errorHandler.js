@@ -80,6 +80,12 @@ async function errorHandling(err, req, res, next) {
     res.status(400).json({
       message: "Budget not deleted, can't double restored",
     });
+  } else if (err.name === "USER_NOT_FOUND") {
+    res.status(404).json({ message: "User not found" });
+  } else if (err.name === "USER_ALREADY_VERIFIED") {
+    res.status(400).json({ message: "User already verified" });
+  } else if (err.name === "USER_NOT_VERIFIED") {
+    res.status(400).json({ message: "User not verified" });
   }
 }
 

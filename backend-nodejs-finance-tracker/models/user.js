@@ -113,6 +113,19 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
+      isVerified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        validate: {
+          notNull: {
+            msg: "Verification status is required",
+          },
+          notEmpty: {
+            msg: "Verification status is required",
+          },
+        },
+      },
     },
     {
       sequelize,
