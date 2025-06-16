@@ -13,6 +13,7 @@ export default function Navbar() {
   const location = useLocation();
   const [activeMenu, setActiveMenu] = useState("home");
   const [checkLogin, setCheckLogin] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   console.log(checkLogin, "ini checkLogin");
 
   async function checkingLogin() {
@@ -20,6 +21,21 @@ export default function Navbar() {
       setCheckLogin(true);
     }
   }
+
+  async function handleScroll() {
+    if (window.scrollY > 50) {
+      setIsScrolled(true);
+    } else {
+      setIsScrolled(false);
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   function stylingMenu(path) {
     return `flex justify-center items-center gap-2 ${
@@ -34,7 +50,11 @@ export default function Navbar() {
   }, []);
 
   return (
-    <div className="bg-black text-white font-semibold w-full h-20 flex justify-between items-center pl-10 pr-20">
+    <div
+      className={` bg-black text-white font-semibold w-full h-20 flex justify-between items-center pl-10 pr-20  border-b border-b-white fixed top-0 z-50 transition-all duration-200 ${
+        isScrolled ? "bg-blue-950 backdrop-blur-md border-b-0" : "bg-black"
+      }`}
+    >
       <NavLink to={"/home"} className="flex justify-center items-center gap-2 ">
         <GiTakeMyMoney className="w-6 h-6" />
         <div className="text-md font-bold">Vibe$</div>

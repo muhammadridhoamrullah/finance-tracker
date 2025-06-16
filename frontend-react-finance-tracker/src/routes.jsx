@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect } from "react-router-dom";
 import MainLayout from "./components/MainLayout";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Home from "./pages/Home";
 
 const checkLogin = () => {
   if (!localStorage.access_token) {
@@ -31,7 +32,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "",
-        element: <div>Home lv2</div>,
+        element: <Home />,
       },
     ],
   },

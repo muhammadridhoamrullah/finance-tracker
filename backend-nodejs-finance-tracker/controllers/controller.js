@@ -1063,6 +1063,9 @@ class Controller {
       }
 
       const getProfile = await User.findByPk(UserId, {
+        attributes: {
+          exclude: ["password"],
+        },
         include: [
           {
             model: Budget,
