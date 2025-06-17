@@ -1264,6 +1264,74 @@ class Controller {
     }
   }
 
+  static async getSummaryThisMonth(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const today = new Date();
+
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      console.log(start, "<<< start <<<");
+      const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999); // Set waktu akhir hari terakhir bulan
+
+      console.log(end, "<<< end <<<");
+
+      const budgets = await Budget.findAll({
+        where: {
+          UserId,
+          [Op.or]: [
+            {
+              startDate: {
+                [Op.between]: [start, end],
+              },
+            },
+            {
+              endDate: {
+                [Op.between]: [start, end],
+              },
+            },
+          ],
+        },
+        include: [
+          {
+            model: Transaction,
+          },
+        ],
+      });
+
+      if (budgets.length === 0) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      const totalSummaryThisMonth = budgets.reduce(
+        (acc, budget) => {
+          acc.totalBudget += budget.amount;
+          acc.remainingBudget += budget.remaining;
+          acc.spentBudget += budget.spent;
+          acc.incomeBudget += budget.income;
+          return acc;
+        },
+        {
+          totalBudget: 0,
+          remainingBudget: 0,
+          spentBudget: 0,
+          incomeBudget: 0,
+        }
+      );
+
+      res.status(200).json({
+        summary: {
+          ...totalSummaryThisMonth,
+          month: today.getMonth() + 1, // Bulan dimulai dari 0
+          year: today.getFullYear(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getSummaryByYear(req, res, next) {
     try {
       const UserId = req.user.id;

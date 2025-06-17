@@ -54,6 +54,7 @@ router.patch(
 router.get("/summary/overall", Controller.getSummary);
 router.get("/summary/range", Controller.getSummaryByRange);
 router.get("/summary/month", Controller.getSummaryByMonth);
+router.get("/summary/this-month", Controller.getSummaryThisMonth);
 router.get("/summary/yearly", Controller.getSummaryByYear);
 
 // Admin
