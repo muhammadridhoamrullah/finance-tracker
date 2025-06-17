@@ -6,7 +6,7 @@ const {
   verifyEmailToken,
 } = require("../helpers/jwt");
 const { User, Budget, Transaction } = require("../models/index");
-const { or, Op } = require("sequelize");
+const { or, Op, ExclusionConstraintError } = require("sequelize");
 const { redis } = require("../config/redis");
 const { sendEmail } = require("../services/emailService");
 
@@ -1043,6 +1043,298 @@ class Controller {
   }
 
   // Akhir Admin
+
+  // Awal Summary
+
+  static async getSummary(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      // const getSummaryFromRedis = await redis.get(`summary:${UserId}`);
+      // console.log(getSummaryFromRedis, "<<< getSummaryFromRedis <<<");
+
+      // if (getSummaryFromRedis) {
+      //   const summary = JSON.parse(getSummaryFromRedis);
+      //   return res.status(200).json({
+      //     summary,
+      //   });
+      // }
+
+      const budgets = await Budget.findAll({
+        where: {
+          UserId,
+        },
+        include: [
+          {
+            model: Transaction,
+            order: [["createdAt", "ASC"]],
+          },
+        ],
+      });
+
+      let earlierStartDate = budgets[0]?.startDate;
+      let latestEndDate = budgets[0]?.endDate;
+
+      for (const budget of budgets) {
+        if (budget.startDate < earlierStartDate) {
+          earlierStartDate = budget.startDate;
+        } else if (budget.endDate > latestEndDate) {
+          latestEndDate = budget.endDate;
+        }
+      }
+
+      if (budgets.length === 0) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      const totalSummary = budgets.reduce(
+        (acc, budget) => {
+          acc.totalBudget += budget.amount;
+          acc.remainingBudget += budget.remaining;
+          acc.spentBudget += budget.spent;
+          acc.incomeBudget += budget.income;
+          return acc;
+        },
+        {
+          totalBudget: 0,
+          remainingBudget: 0,
+          spentBudget: 0,
+          incomeBudget: 0,
+        }
+      );
+
+      // Simpan ke Redis
+      // await redis.set(`summary:${UserId}`, JSON.stringify(summary));
+
+      res.status(200).json({
+        summary: {
+          ...totalSummary,
+          startDate: earlierStartDate,
+          endDate: latestEndDate,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSummaryByRange(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        throw { name: "START_END_DATE_REQUIRED" };
+      }
+
+      const start = new Date(startDate);
+      console.log(start, "<<< start <<<");
+
+      const end = new Date(endDate);
+      console.log(end, "<<< end <<<");
+
+      if (start > end) {
+        throw { name: "START_END_DATE_INVALID" };
+      }
+
+      const budgets = await Budget.findAll({
+        where: {
+          UserId,
+        },
+        include: [
+          {
+            model: Transaction,
+            where: {
+              date: {
+                [Op.between]: [start, end],
+              },
+            },
+          },
+        ],
+      });
+
+      if (budgets.length === 0) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      const totalSummaryByRange = budgets.reduce(
+        (acc, budget) => {
+          acc.totalBudget += budget.amount;
+          acc.remainingBudget += budget.remaining;
+          acc.spentBudget += budget.spent;
+          acc.incomeBudget += budget.income;
+          return acc;
+        },
+        {
+          totalBudget: 0,
+          remainingBudget: 0,
+          spentBudget: 0,
+          incomeBudget: 0,
+        }
+      );
+
+      return res.status(200).json({
+        summary: {
+          ...totalSummaryByRange,
+          startDate: startDate,
+          endDate: endDate,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSummaryByMonth(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { month, year } = req.query;
+
+      if (!month || !year) {
+        throw { name: "MONTH_YEAR_REQUIRED" };
+      }
+
+      const start = new Date(year, month - 1, 1);
+      console.log(start, "<<< start <<<");
+
+      const end = new Date(year, month, 0);
+      end.setHours(23, 59, 59, 999); // Set waktu akhir hari terakhir bulan
+
+      console.log(end, "<<< end <<<");
+
+      // Cek apakah bulan dan tahun valid
+      if (month < 1 || month > 12 || year < 1970) {
+        throw { name: "MONTH_YEAR_INVALID" };
+      }
+
+      const budgets = await Budget.findAll({
+        where: {
+          UserId,
+          [Op.or]: [
+            {
+              startDate: {
+                [Op.between]: [start, end],
+              },
+            },
+            {
+              endDate: {
+                [Op.between]: [start, end],
+              },
+            },
+          ],
+        },
+        include: [
+          {
+            model: Transaction,
+          },
+        ],
+      });
+
+      if (budgets.length === 0) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      const totalSummaryByMonth = budgets.reduce(
+        (acc, budget) => {
+          acc.totalBudget += budget.amount;
+          acc.remainingBudget += budget.remaining;
+          acc.spentBudget += budget.spent;
+          acc.incomeBudget += budget.income;
+          return acc;
+        },
+        {
+          totalBudget: 0,
+          remainingBudget: 0,
+          spentBudget: 0,
+          incomeBudget: 0,
+        }
+      );
+
+      res.status(200).json({
+        summary: {
+          ...totalSummaryByMonth,
+          month: parseInt(month),
+          year: parseInt(year),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSummaryByYear(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const { year } = req.query;
+
+      if (!year) {
+        throw { name: "YEAR_REQUIRED" };
+      }
+
+      const start = new Date(year, 0, 1);
+      console.log(start, "<<< start <<<");
+
+      const end = new Date(year, 11, 31, 23, 59, 59, 999);
+      console.log(end, "<<< end <<<");
+
+      const budgets = await Budget.findAll({
+        where: {
+          UserId,
+          [Op.or]: [
+            {
+              startDate: {
+                [Op.between]: [start, end],
+              },
+            },
+            {
+              endDate: {
+                [Op.between]: [start, end],
+              },
+            },
+          ],
+        },
+        include: [
+          {
+            model: Transaction,
+          },
+        ],
+      });
+
+      if (budgets.length === 0) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
+
+      const totalSummaryByYear = budgets.reduce(
+        (acc, budget) => {
+          acc.totalBudget += budget.amount;
+          acc.remainingBudget += budget.remaining;
+          acc.spentBudget += budget.spent;
+          acc.incomeBudget += budget.income;
+          return acc;
+        },
+        {
+          totalBudget: 0,
+          remainingBudget: 0,
+          spentBudget: 0,
+          incomeBudget: 0,
+        }
+      );
+
+      res.status(200).json({
+        summary: {
+          ...totalSummaryByYear,
+          year: parseInt(year),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Akhir Summary
 
   // Awal User
 

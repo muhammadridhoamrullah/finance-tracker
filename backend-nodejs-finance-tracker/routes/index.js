@@ -50,6 +50,12 @@ router.patch(
   Controller.restoreMyTransaction
 );
 
+// Summary
+router.get("/summary/overall", Controller.getSummary);
+router.get("/summary/range", Controller.getSummaryByRange);
+router.get("/summary/month", Controller.getSummaryByMonth);
+router.get("/summary/yearly", Controller.getSummaryByYear);
+
 // Admin
 router.get("/admin/budget", authorizationAdmin, Controller.getAllBudget);
 router.get(

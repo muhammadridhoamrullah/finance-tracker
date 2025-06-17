@@ -86,6 +86,21 @@ async function errorHandling(err, req, res, next) {
     res.status(400).json({ message: "User already verified" });
   } else if (err.name === "USER_NOT_VERIFIED") {
     res.status(400).json({ message: "User not verified" });
+  } else if (err.name === "START_END_DATE_REQUIRED") {
+    res.status(400).json({ message: "Start Date and End Date are required" });
+  } else if (err.name === "START_END_DATE_INVALID") {
+    res.status(400).json({
+      message: "Start Date must be less than End Date",
+    });
+  } else if (err.name === "MONTH_YEAR_REQUIRED") {
+    res.status(400).json({ message: "Month and Year are required" });
+  } else if (err.name === "YEAR_REQUIRED") {
+    res.status(400).json({ message: "Year is required" });
+  } else if (err.name === "MONTH_YEAR_INVALID") {
+    res.status(400).json({
+      message:
+        "Month must be between 1 and 12, and Year must be a valid number",
+    });
   }
 }
 
