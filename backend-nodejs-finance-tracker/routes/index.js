@@ -56,6 +56,7 @@ router.get("/summary/range", Controller.getSummaryByRange);
 router.get("/summary/month", Controller.getSummaryByMonth);
 router.get("/summary/this-month", Controller.getSummaryThisMonth);
 router.get("/summary/yearly", Controller.getSummaryByYear);
+router.get("/summary/report-month", Controller.getReportMonthly);
 
 // Admin
 router.get("/admin/budget", authorizationAdmin, Controller.getAllBudget);
@@ -74,34 +75,3 @@ router.use(errorHandling);
 module.exports = {
   router,
 };
-
-// Fitur menarik untuk ditambahkan
-
-// 1. Transaksi Berulang (Recurring Transactions)
-// Tujuan: Otomatisasi pemasukan/pengeluaran rutin
-
-// Tambahkan field recurring (boolean), frequency (daily, weekly, monthly)
-
-// Scheduler (pakai node-cron) untuk membuat transaksi otomatis setiap periode
-
-// 2. Ringkasan & Statistik Keuangan
-// Tujuan: Memberikan insight kepada user
-
-// Total pemasukan dan pengeluaran per bulan
-
-// Endpoint seperti:
-
-// GET /summary?month=2025-06
-
-// GET /summary/yearly
-
-// Bisa hitung selisih budget dan realisasi
-
-// 3. 6. Notifikasi via Email
-// Tujuan: Memberi tahu user ketika sesuatu terjadi
-
-// Budget hampir habis
-
-// Ada transaksi besar > RpX
-
-// Implementasi: Nodemailer + cron

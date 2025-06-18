@@ -9,6 +9,7 @@ const { User, Budget, Transaction } = require("../models/index");
 const { or, Op, ExclusionConstraintError } = require("sequelize");
 const { redis } = require("../config/redis");
 const { sendEmail } = require("../services/emailService");
+const { formatRupiah, formatDate } = require("../helpers/utils");
 
 class Controller {
   static async login(req, res, next) {
@@ -505,7 +506,16 @@ class Controller {
         throw { name: "TRANSACTION_FIELDS_REQUIRED" };
       }
 
-      const budget = await Budget.findByPk(BudgetId);
+      const budget = await Budget.findByPk(BudgetId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password"],
+            },
+          },
+        ],
+      });
 
       if (!budget) {
         throw { name: "BUDGET_NOT_FOUND" };
@@ -542,6 +552,17 @@ class Controller {
           remaining: Number(budget.remaining) - Number(amount),
           spent: Number(budget.spent) + Number(amount),
         });
+        if (Number(amount) >= 1000000) {
+          await sendEmail(
+            budget.User.email,
+            "Large Expense Alert",
+            `Hi ${
+              budget.User.firstName
+            },\n\nYou have recorded a large expense of ${formatRupiah(
+              amount
+            )} on ${formatDate(date)}. Please review your budget.\n\nThank you!`
+          );
+        }
       }
 
       // Hapus cache Redis jika ada
@@ -1397,6 +1418,14 @@ class Controller {
           year: parseInt(year),
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getReportMonthly(req, res, next) {
+    try {
+      const UserId = req.user.id;
     } catch (error) {
       next(error);
     }
