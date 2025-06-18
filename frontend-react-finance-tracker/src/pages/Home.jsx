@@ -2,20 +2,43 @@ import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import instance from "../axiosInstance";
 import { FaPlus } from "react-icons/fa";
+import { CiWallet } from "react-icons/ci";
+import { HiTrendingUp } from "react-icons/hi";
+import { HiTrendingDown } from "react-icons/hi";
+import { GiTakeMyMoney } from "react-icons/gi";
 
 export default function Home() {
   const [user, setUser] = useState(null);
-  console.log(user, "ini user di home");
 
   const [data, setData] = useState({
-    totalBudget: 0,
-    remainingBudget: 0,
-    spentBudget: 0,
-    incomeBudget: 0,
+    budgets: {
+      id: null,
+      UserId: null,
+      name: "",
+      amount: 0,
+      spent: 0,
+      income: 0,
+      startDate: "",
+      endDate: "",
+      remaining: 0,
+      createdAt: "",
+      updatedAt: "",
+      deletedAt: null,
+      Transactions: [], // array kosong, agar bisa langsung .map tanpa error
+    },
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
   });
-  console.log(data, "ini data di home");
+  console.log("data", data);
+
+  // const [dataOneMonthAgo, setDataOneMonthAgo] = useState({
+  //   totalBudget: 0,
+  //   remainingBudget: 0,
+  //   spentBudget: 0,
+  //   incomeBudget: 0,
+  //   month: new Date().getMonth(),
+  //   year: new Date().getFullYear(),
+  // });
 
   async function fetchUserData() {
     try {
@@ -47,18 +70,67 @@ export default function Home() {
 
       setData(response.data.summary);
     } catch (error) {
-      if (error.response?.data?.message === "BUDGET_NOT_FOUND") {
+      if (error.response?.data?.message === "Budget not found") {
         setData({
-          totalBudget: 0,
-          remainingBudget: 0,
-          spentBudget: 0,
-          incomeBudget: 0,
+          budgets: {
+            id: null,
+            UserId: null,
+            name: "",
+            amount: 0,
+            spent: 0,
+            income: 0,
+            startDate: "",
+            endDate: "",
+            remaining: 0,
+            createdAt: "",
+            updatedAt: "",
+            deletedAt: null,
+            Transactions: [],
+          },
           month: new Date().getMonth() + 1,
           year: new Date().getFullYear(),
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: error.response?.data?.message,
         });
       }
     }
   }
+
+  // async function getSummaryOneMonthAgo() {
+  //   try {
+  //     const response = await instance.get("/summary/one-month-ago", {
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.access_token}`,
+  //       },
+  //     });
+  //     console.log("response one month ago", response.data.summary);
+
+  //     setDataOneMonthAgo(response.data.summary);
+  //   } catch (error) {
+  //     console.log("error one month ago", error);
+
+  //     if (error.response?.data?.message === "Budget not found") {
+  //       setDataOneMonthAgo({
+  //         totalBudget: 0,
+  //         remainingBudget: 0,
+  //         spentBudget: 0,
+  //         incomeBudget: 0,
+  //         month: new Date().getMonth(),
+  //         year: new Date().getFullYear(),
+  //       });
+  //     } else {
+  //       Swal.fire({
+  //         icon: "error",
+  //         title: "Error",
+  //         text: error.response?.data?.message,
+  //       });
+  //     }
+  //   }
+  // }
 
   useEffect(() => {
     fetchUserData();
@@ -68,8 +140,12 @@ export default function Home() {
     getSummaryThisMonth();
   }, []);
 
+  // useEffect(() => {
+  //   getSummaryOneMonthAgo();
+  // }, []);
+
   function styleCard() {
-    return "w-72 h-36 rounded-xl pl-6 flex flex-col justify-center items-start ";
+    return "w-72 h-36 rounded-xl px-6 flex flex-col justify-center items-start ";
   }
 
   function formatRupiah(value) {
@@ -78,8 +154,17 @@ export default function Home() {
       currency: "IDR",
     }).format(value);
   }
+
+  function formatDate(tanggal) {
+    return new Intl.DateTimeFormat("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(new Date(tanggal));
+  }
+
   return (
-    <div className="pt-24 w-full min-h-screen bg-black text-white px-14 flex flex-col">
+    <div className="pt-24 pb-16 w-full min-h-screen bg-black text-white px-14 flex flex-col overflow-y-auto ">
       {/* Awal Bagian Hello + Tambah Transaksi */}
       <div className="flex justify-between items-center mb-10">
         <div className="flex gap-2 items-end ">
@@ -95,18 +180,186 @@ export default function Home() {
 
       {/* Awal Bagian Info Keuangan */}
       <div className="flex justify-between flex-wrap ">
+        {/* Awal Total Budget */}
         <div className={`${styleCard()} bg-blue-800`}>
-          <div className="font-semibold">Total Balance</div>
-          <div className="font-bold text-2xl">
-            {formatRupiah(data?.totalBudget)}
+          <div className=" w-full font-semibold flex justify-between">
+            <div>Total Balance</div>
+            <CiWallet className="w-6 h-6 " />
           </div>
-          <div className="text-xs font-semibold">Total Balance</div>
+          <div className="font-bold text-2xl">
+            {formatRupiah(data?.budgets.amount)}
+          </div>
+          <div className="mt-1 text-xs font-semibold">Total Balance</div>
         </div>
-        <div className={`${styleCard()} bg-green-800`}>Income</div>
-        <div className={`${styleCard()} bg-red-800`}>Expenses</div>
-        <div className={`${styleCard()} bg-[#FE5000]`}>Savings</div>
+        {/* Akhir Total Budget */}
+
+        {/* Awal Income */}
+        <div className={`${styleCard()} bg-green-800`}>
+          <div className="w-full font-semibold flex justify-between">
+            <div>Income</div>
+            <HiTrendingUp className="w-6 h-6" />
+          </div>
+          <div className="font-bold text-2xl">
+            {formatRupiah(data?.budgets.income)}
+          </div>
+          <div className="mt-1 text-xs font-semibold">Total Income</div>
+        </div>
+        {/* Akhir Income */}
+
+        {/* Awal Expenses */}
+        <div className={`${styleCard()} bg-red-800`}>
+          <div className="w-full font-semibold flex justify-between">
+            <div>Expenses</div>
+            <HiTrendingDown className="w-6 h-6" />
+          </div>
+          <div className="font-bold text-2xl">
+            {formatRupiah(data?.budgets.spent)}
+          </div>
+          <div className="mt-1 text-xs font-semibold">Total Expenses</div>
+        </div>
+        {/* Akhir Expenses */}
+
+        {/* Awal Remaining */}
+        <div className={`${styleCard()} bg-[#FE5000]`}>
+          <div className="font-semibold w-full flex justify-between">
+            <div>Remaining</div>
+            <GiTakeMyMoney className="w-6 h-6" />
+          </div>
+          <div className="font-bold text-2xl">
+            {formatRupiah(data?.budgets.remaining)}
+          </div>
+          <div className="text-xs font-semibold">Total Remaining</div>
+        </div>
+        {/* Akhir Remaining */}
       </div>
       {/* Akhir Bagian Info Keuangan */}
+
+      {/* Awal Bagian Transaksi Terbaru dan Budget Overview */}
+
+      <div className="w-full flex justify-between gap-8 mt-8 text-black">
+        <div className="bg-white w-2/3 p-5 rounded-xl flex flex-col gap-5">
+          <div className="flex justify-between  items-center">
+            <div className="flex flex-col">
+              <div className="font-bold text-2xl">Newest Transactions</div>
+              <div className="font-semibold text-xs text-slate-500">
+                {data?.budgets?.Transactions?.length >= 5
+                  ? "5"
+                  : data?.budgets?.Transactions.length}{" "}
+                your latest transactions
+              </div>
+            </div>
+            <div className="bg-black border py-1 px-3 rounded-md text-xs text-white font-semibold cursor-pointer hover:bg-blue-950 transition-all duration-75 ease-in-out">
+              See All
+            </div>
+          </div>
+
+          {data?.budgets?.Transactions?.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {data.budgets.Transactions.slice(0, 5).map((el) => {
+                return (
+                  <div className="flex justify-between p-4 items-center border border-slate-400 rounded-md">
+                    <div className="flex items-center gap-4">
+                      {el.type === "income" ? (
+                        <HiTrendingUp className="w-6 h-6    text-green-500" />
+                      ) : (
+                        <HiTrendingDown className="w-6 h-6 text-red-500" />
+                      )}
+
+                      <div className="flex flex-col ">
+                        <div className="font-bold text-xl">
+                          {el.description}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs px-2 py-1 rounded-sm bg-black text-white  font-semibold">
+                            {el.category}
+                          </div>
+                          <div className="text-xs">-</div>
+                          <div className="text-xs font-semibold text-gray-500">
+                            {formatDate(el.date)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`font-bold text-xl ${
+                        el.type === "income" ? "text-green-500" : "text-red-500"
+                      }`}
+                    >
+                      {el.type === "income" ? "+" : "-"}
+                      {formatRupiah(el.amount)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div>There is no transaction</div>
+          )}
+        </div>
+        <div className="bg-white w-1/3 p-5">Budget Overview</div>
+      </div>
+
+      {/* Akhir Bagian Transaksi Terbaru dan Budget Overview */}
     </div>
   );
 }
+
+// {
+//     "budgets": {
+//         "id": 17,
+//         "UserId": 6,
+//         "name": "June",
+//         "amount": 1500000,
+//         "spent": 1215000,
+//         "income": 0,
+//         "startDate": "2025-06-01T00:00:00.000Z",
+//         "endDate": "2025-06-30T00:00:00.000Z",
+//         "remaining": 285000,
+//         "createdAt": "2025-06-17T14:22:38.995Z",
+//         "updatedAt": "2025-06-18T06:27:14.146Z",
+//         "deletedAt": null,
+//         "Transactions": [
+//             {
+//                 "id": 18,
+//                 "amount": 15000,
+//                 "category": "Food",
+//                 "type": "expense",
+//                 "date": "2025-06-17T00:00:00.000Z",
+//                 "description": "Mie Ayam",
+//                 "UserId": 6,
+//                 "BudgetId": 17,
+//                 "createdAt": "2025-06-17T14:23:13.451Z",
+//                 "updatedAt": "2025-06-17T14:23:13.451Z",
+//                 "deletedAt": null
+//             },
+//             {
+//                 "id": 19,
+//                 "amount": 1200000,
+//                 "category": "Shoes",
+//                 "type": "expense",
+//                 "date": "2025-06-18T00:00:00.000Z",
+//                 "description": "New Balance 574",
+//                 "UserId": 6,
+//                 "BudgetId": 17,
+//                 "createdAt": "2025-06-18T06:27:12.213Z",
+//                 "updatedAt": "2025-06-18T06:27:12.213Z",
+//                 "deletedAt": null
+//             },
+//             {
+//                 "id": 20,
+//                 "amount": 1200000,
+//                 "category": "Shoes",
+//                 "type": "expense",
+//                 "date": "2025-06-18T00:00:00.000Z",
+//                 "description": "New Balance 574",
+//                 "UserId": 6,
+//                 "BudgetId": 17,
+//                 "createdAt": "2025-06-18T06:27:14.133Z",
+//                 "updatedAt": "2025-06-18T06:27:14.133Z",
+//                 "deletedAt": null
+//             }
+//         ]
+//     },
+//     "month": 6,
+//     "year": 2025
+// }

@@ -1298,54 +1298,74 @@ class Controller {
 
       console.log(end, "<<< end <<<");
 
-      const budgets = await Budget.findAll({
+      const budgets = await Budget.findOne({
         where: {
           UserId,
-          [Op.or]: [
-            {
-              startDate: {
-                [Op.between]: [start, end],
-              },
-            },
-            {
-              endDate: {
-                [Op.between]: [start, end],
-              },
-            },
-          ],
+          startDate: {
+            [Op.gte]: start,
+          },
+          endDate: {
+            [Op.lte]: end,
+          },
         },
         include: [
           {
             model: Transaction,
+            separate: true,
+            order: [["date", "ASC"]],
           },
         ],
       });
 
-      if (budgets.length === 0) {
+      if (!budgets) {
         throw { name: "BUDGET_NOT_FOUND" };
       }
 
-      const totalSummaryThisMonth = budgets.reduce(
-        (acc, budget) => {
-          acc.totalBudget += budget.amount;
-          acc.remainingBudget += budget.remaining;
-          acc.spentBudget += budget.spent;
-          acc.incomeBudget += budget.income;
-          return acc;
+      res.status(200).json({
+        summary: {
+          budgets,
+          month: today.getMonth() + 1, // Bulan dimulai dari 0
+          year: today.getFullYear(),
         },
-        {
-          totalBudget: 0,
-          remainingBudget: 0,
-          spentBudget: 0,
-          incomeBudget: 0,
-        }
-      );
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSummaryOneMonthAgo(req, res, next) {
+    try {
+      const UserId = req.user.id;
+
+      const today = new Date();
+      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const end = new Date(today.getFullYear(), today.getMonth(), 0);
+      end.setHours(23, 59, 59, 999); // Set waktu akhir hari terakhir bulan
+
+      const budgets = await Budget.findOne({
+        where: {
+          UserId,
+          startDate: {
+            [Op.gte]: start,
+          },
+          endDate: {
+            [Op.lte]: end,
+          },
+        },
+      });
+
+      if (!budgets) {
+        throw { name: "BUDGET_NOT_FOUND" };
+      }
 
       res.status(200).json({
         summary: {
-          ...totalSummaryThisMonth,
-          month: today.getMonth() + 1, // Bulan dimulai dari 0
-          year: today.getFullYear(),
+          totalBudget: budgets.amount,
+          remainingBudget: budgets.remaining,
+          spentBudget: budgets.spent,
+          incomeBudget: budgets.income,
+          month: start.getMonth() + 1, // Bulan dimulai dari 0
+          year: start.getFullYear(),
         },
       });
     } catch (error) {
