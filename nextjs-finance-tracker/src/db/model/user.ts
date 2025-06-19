@@ -1,7 +1,11 @@
+import { ObjectId } from "mongodb";
 import { GetDB } from "../config";
 import { comparePassword, hashPassword } from "../helpers/bcrypt";
 import { signToken } from "../helpers/jwt";
 import { UserModel } from "../type/type";
+import { sendEmail } from "../utils/emailService";
+import * as jose from "jose";
+import { useServerInsertedHTML } from "next/navigation";
 
 type UserModelInput = Omit<
   UserModel,
@@ -33,6 +37,7 @@ export async function createUser(user: UserModelInput) {
     ...user,
     password: hashPassword(user.password),
     role: "User",
+    isVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -42,7 +47,18 @@ export async function createUser(user: UserModelInput) {
   if (!createNewUser.acknowledged) {
     throw new Error("Failed to create user");
   }
-  console.log(createNewUser, "ini model user create");
+
+  const token = signToken({
+    _id: createNewUser.insertedId.toString(),
+  });
+
+  const link = `${process.env.NEXT_PUBLIC_CLIENT_URL}/verify-email?token=${token}`;
+
+  await sendEmail(
+    user.email,
+    "Verify your email",
+    `Hi ${newUser.firstName},\n\nPlease verify your email by clicking the link below:\n${link}\n\nThank you!`
+  );
 
   return createNewUser;
 }
@@ -71,4 +87,45 @@ export async function loginUser(user: UserModelLogin) {
   });
 
   return access_token;
+}
+
+export async function verifyEmail(token: string) {
+  const db = await GetDB();
+
+  const secret = new TextEncoder().encode(process.env.SECRET);
+
+  const decoded = await jose.jwtVerify<{
+    _id: string;
+  }>(token, secret);
+
+  const UserId = decoded.payload._id;
+  console.log("UserId di model user verifyemail", UserId);
+
+  const checkUser = await db.collection(COLLECTION_NAME).findOne({
+    _id: new ObjectId(UserId),
+  });
+
+  if (!checkUser) {
+    throw new Error("User not found");
+  }
+
+  if (checkUser.isVerified) {
+    throw new Error("Email already verified");
+  }
+
+  const updateUser = await db.collection(COLLECTION_NAME).updateOne(
+    {
+      _id: new ObjectId(UserId),
+    },
+    {
+      $set: {
+        isVerified: true,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  console.log("updateUser di model user verify email", updateUser);
+
+  return updateUser;
 }
