@@ -8,7 +8,7 @@ const {
 const { User, Budget, Transaction } = require("../models/index");
 const { or, Op, ExclusionConstraintError } = require("sequelize");
 const { redis } = require("../config/redis");
-const { sendEmail } = require("../services/emailService");
+const { sendEmail, sendBudgetIsLowEmail } = require("../services/emailService");
 const { formatRupiah, formatDate } = require("../helpers/utils");
 
 class Controller {
@@ -552,6 +552,7 @@ class Controller {
           remaining: Number(budget.remaining) - Number(amount),
           spent: Number(budget.spent) + Number(amount),
         });
+        const percentage = Number(budget.remaining) / Number(budget.amount);
         if (Number(amount) >= 1000000) {
           await sendEmail(
             budget.User.email,
@@ -562,6 +563,8 @@ class Controller {
               amount
             )} on ${formatDate(date)}. Please review your budget.\n\nThank you!`
           );
+        } else if (percentage < 0.2) {
+          await sendBudgetIsLowEmail(budget.User, budget);
         }
       }
 
