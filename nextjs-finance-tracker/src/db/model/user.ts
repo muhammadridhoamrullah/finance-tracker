@@ -74,6 +74,10 @@ export async function loginUser(user: UserModelLogin) {
     throw new Error("Email or Password is invalid");
   }
 
+  if (!checkUser.isVerified) {
+    throw new Error("Email is not verified");
+  }
+
   const checkPassword = comparePassword(user.password, checkUser.password);
 
   if (!checkPassword) {

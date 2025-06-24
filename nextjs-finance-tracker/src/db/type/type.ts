@@ -11,6 +11,7 @@ export interface UserModel {
   updatedAt: Date;
   isDeleted: boolean;
   deletedAt: Date | null;
+  isVerified: boolean;
 }
 export interface BudgetModel {
   _id: string;

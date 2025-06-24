@@ -4,7 +4,7 @@ import { poppins } from "@/font";
 import { EyeIcon, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { z } from "zod";
 const Cookies = require("js-cookie");
@@ -17,11 +17,21 @@ export default function Login() {
     setShowPassword(!showPassword);
   }
 
-  const CheckCookies = Cookies.get("access_token");
+  // const CheckCookies = Cookies.get("access_token");
+  // console.log(CheckCookies, "ini cookies access_token");
 
-  if (CheckCookies) {
-    navigate.push("/");
-  }
+  // if (CheckCookies) {
+  //   navigate.push("/");
+  // }
+
+  useEffect(() => {
+    const checkCookies = Cookies.get("access_token");
+    console.log(checkCookies, "ini cookies access_token");
+
+    if (checkCookies) {
+      navigate.push("/");
+    }
+  }, []);
 
   const [formLogin, setFormLogin] = useState({
     email: "",
@@ -101,7 +111,7 @@ export default function Login() {
         <div
           className={` ${poppins.className} w-1/2 h-full flex flex-col p-10 justify-between`}
         >
-          <div className={`${poppins.className} text-3xl`}>Finance Tracker</div>
+          <div className={`${poppins.className} text-3xl`}>Vibe$</div>
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <div className="text-2xl">Welcome Back</div>
