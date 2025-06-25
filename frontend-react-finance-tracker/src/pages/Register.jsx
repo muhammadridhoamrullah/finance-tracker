@@ -149,7 +149,10 @@ export default function Register() {
             </button>
             <div className="text-xs font-extralight">
               Already have an account?{" "}
-              <Link className="text-blue-500 hover:text-white" to={"/login"}>
+              <Link
+                className="text-blue-500 font-bold hover:text-white"
+                to={"/login"}
+              >
                 LOGIN
               </Link>
             </div>

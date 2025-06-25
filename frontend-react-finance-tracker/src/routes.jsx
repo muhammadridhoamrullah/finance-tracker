@@ -30,6 +30,7 @@ const router = createBrowserRouter([
   {
     path: "/home",
     element: <MainLayout />,
+    loader: checkLogin,
     children: [
       {
         path: "",

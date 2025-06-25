@@ -1295,11 +1295,8 @@ class Controller {
       const today = new Date();
 
       const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      console.log(start, "<<< start <<<");
       const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       end.setHours(23, 59, 59, 999); // Set waktu akhir hari terakhir bulan
-
-      console.log(end, "<<< end <<<");
 
       const budgets = await Budget.findOne({
         where: {

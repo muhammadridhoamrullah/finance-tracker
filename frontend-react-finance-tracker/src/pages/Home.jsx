@@ -6,9 +6,17 @@ import { CiWallet } from "react-icons/ci";
 import { HiTrendingUp } from "react-icons/hi";
 import { HiTrendingDown } from "react-icons/hi";
 import { GiTakeMyMoney } from "react-icons/gi";
+import { FaMoneyBillTrendUp } from "react-icons/fa6";
 
 export default function Home() {
   const [user, setUser] = useState(null);
+
+  function monthNumber(month) {
+    const date = new Date(2000, month - 1, 1); // Tahun 2000 digunakan untuk menghindari masalah tahun kabisat
+    return new Intl.DateTimeFormat("en-US", {
+      month: "long",
+    }).format(date);
+  }
 
   const [data, setData] = useState({
     budgets: {
@@ -138,6 +146,13 @@ export default function Home() {
 
   useEffect(() => {
     getSummaryThisMonth();
+
+    // const interval = setInterval(() => {
+    //   console.log("Fetching summary this month...");
+    //   getSummaryThisMonth();
+    // }, 10000);
+
+    // return () => clearInterval(interval);
   }, []);
 
   // useEffect(() => {
@@ -253,11 +268,15 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Awal Recent Transactions */}
           {data?.budgets?.Transactions?.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {data.budgets.Transactions.slice(0, 5).map((el) => {
+              {data.budgets.Transactions.slice(0, 5).map((el, i) => {
                 return (
-                  <div className="flex justify-between p-4 items-center border border-slate-400 rounded-md">
+                  <div
+                    key={el.id}
+                    className="flex justify-between p-4 items-center border border-slate-400 rounded-md"
+                  >
                     <div className="flex items-center gap-4">
                       {el.type === "income" ? (
                         <HiTrendingUp className="w-6 h-6    text-green-500" />
@@ -296,8 +315,66 @@ export default function Home() {
             <div>There is no transaction</div>
           )}
         </div>
-        <div className="bg-white w-1/3 p-5">Budget Overview</div>
+        {/* Akhir Recent Transactions */}
+
+        {/* Awal Budget Overview */}
+        <div className="bg-white w-1/3 p-5 flex flex-col gap-5 rounded-xl">
+          <div className="flex flex-col">
+            <div className=" flex items-center gap-2">
+              <FaMoneyBillTrendUp className="w-6 h-6" />
+              <div className="font-bold text-2xl">Budget Overview</div>
+            </div>
+            <div className="text-xs font-semibold text-slate-500">
+              Expenses on {monthNumber(data?.month)} {data?.year} - Budget{" "}
+              {formatRupiah(data?.budgets?.amount)}
+            </div>
+          </div>
+
+          {data?.budgets?.Transactions?.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {Object.entries(
+                data.budgets.Transactions.reduce((acc, curr) => {
+                  if (curr.type !== "expense") return acc; // Hanya ambil transaksi expense
+                  acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+                  return acc;
+                }, {})
+              )
+                .slice(0, 5)
+                .map(([category, amount]) => {
+                  const budget = data.budgets.amount;
+                  const percentage = (amount / budget) * 100;
+                  return (
+                    <div key={category}>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between items-center">
+                          <div className="font-bold">{category}</div>
+                          <div className="font-bold text-xs">
+                            {formatRupiah(amount)}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div
+                              className="bg-blue-950 h-3 rounded-full"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-slate-500 text-xs">
+                            {percentage.toFixed()}% from Total Budget
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div>There is no expense this month</div>
+          )}
+        </div>
       </div>
+      {/* Akhir Budget Overview */}
 
       {/* Akhir Bagian Transaksi Terbaru dan Budget Overview */}
     </div>
