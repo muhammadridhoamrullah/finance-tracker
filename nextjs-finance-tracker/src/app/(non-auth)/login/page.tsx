@@ -29,7 +29,7 @@ export default function Login() {
     console.log(checkCookies, "ini cookies access_token");
 
     if (checkCookies) {
-      navigate.push("/");
+      navigate.push("/home");
     }
   }, []);
 
@@ -68,7 +68,7 @@ export default function Login() {
       if (response.ok) {
         Cookies.set("access_token", result.access_token);
 
-        navigate.push("/");
+        navigate.push("/home");
       } else {
         Swal.fire({
           icon: "error",

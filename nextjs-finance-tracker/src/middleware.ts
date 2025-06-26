@@ -7,14 +7,14 @@ export async function middleware(request: NextRequest) {
   try {
     // console.log("Masuk middleware");
 
-    const cookiesAuth = (await cookies()).get("Authorization");
+    const cookiesAuth = (await cookies()).get("access_token");
     // console.log(cookiesAuth, "ini cookiesAuth middleware");
 
     if (!cookiesAuth) {
       throw new Error("Authorization token not found");
     }
 
-    let token = cookiesAuth.value.split(" ")[1];
+    let token = cookiesAuth.value;
 
     // console.log(token, "ini token middleware");
 
@@ -67,5 +67,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/budgets/:path*", "/api/transactions/:path*"],
+  matcher: [
+    "/api/budgets/:path*",
+    "/api/transactions/:path*",
+    "/home/:path*",
+    "/budget/:path*",
+    "/transaction/:path*",
+  ],
 };
