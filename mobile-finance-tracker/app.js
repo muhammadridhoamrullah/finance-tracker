@@ -14,9 +14,14 @@ const {
 } = require("./schemas/user");
 const { authentication } = require("./middlewares/authentication");
 
+const {
+  typeDefs: budgetTypeDefs,
+  resolvers: budgetResolvers,
+} = require("./schemas/budget");
+
 const server = new ApolloServer({
-  typeDefs: [userTypeDefs],
-  resolvers: [userResolvers],
+  typeDefs: [userTypeDefs, budgetTypeDefs],
+  resolvers: [userResolvers, budgetResolvers],
   introspection: true,
   formatError: (error) => {
     console.error("GraphQL Error:", error);

@@ -100,7 +100,7 @@ class User {
       .toArray();
 
     if (findAllUsers.length === 0) {
-      throw new Error("No users found");
+      return [];
     }
 
     return findAllUsers;
@@ -110,65 +110,3 @@ class User {
 module.exports = {
   User,
 };
-
-// {
-//   "data": {
-//     "getUser": [
-//       {
-//         "_id": "6860e133cb89577eb18063b6",
-//         "firstName": "Kim",
-//         "lastName": "Minji",
-//         "email": "kimminji@gmail.com",
-//         "phoneNumber": "085363508582",
-//         "address": "Jalan Swarna Bumi",
-//         "role": "User",
-//         "isVerified": false,
-//         "createdAt": "1751179571464",
-//         "updatedAt": "1751179571464"
-//       },
-//       {
-//         "_id": "6860efabd4b84596988a8cd6",
-//         "firstName": "Kang",
-//         "lastName": "Harin",
-//         "email": "kanghaerin@gmail.com",
-//         "phoneNumber": "085363508583",
-//         "address": "Jalan Kembang",
-//         "role": "User",
-//         "isVerified": false,
-//         "createdAt": "1751183275988",
-//         "updatedAt": "1751183275988"
-//       }
-//     ]
-//   }
-// }
-
-// {
-//   "data": {
-//     "getUser": [
-//       {
-//         "_id": "6860e133cb89577eb18063b6",
-//         "firstName": "Kim",
-//         "lastName": "Minji",
-//         "email": "kimminji@gmail.com",
-//         "phoneNumber": "085363508582",
-//         "address": "Jalan Swarna Bumi",
-//         "role": "User",
-//         "isVerified": false,
-//         "createdAt": "2025-06-29T06:46:11.464Z",
-//         "updatedAt": "2025-06-29T06:46:11.464Z"
-//       },
-//       {
-//         "_id": "6860efabd4b84596988a8cd6",
-//         "firstName": "Kang",
-//         "lastName": "Harin",
-//         "email": "kanghaerin@gmail.com",
-//         "phoneNumber": "085363508583",
-//         "address": "Jalan Kembang",
-//         "role": "User",
-//         "isVerified": false,
-//         "createdAt": "2025-06-29T07:47:55.988Z",
-//         "updatedAt": "2025-06-29T07:47:55.988Z"
-//       }
-//     ]
-//   }
-// }

@@ -4,8 +4,7 @@ const { verifyToken } = require("../helpers/jwt");
 
 async function authentication(req, db) {
   try {
-    // await connect();
-    console.log(req.headers, "req.headers");
+    
 
     const { authorization } = req.headers;
 
@@ -16,7 +15,7 @@ async function authentication(req, db) {
     const token = authorization.split(" ")[1];
 
     const payload = await verifyToken(token);
-    console.log(payload, "payload");
+ 
 
     const findUser = await db.collection("users").findOne({
       _id: new ObjectId(payload.id),
