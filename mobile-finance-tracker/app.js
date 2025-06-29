@@ -12,11 +12,19 @@ const {
   typeDefs: userTypeDefs,
   resolvers: userResolvers,
 } = require("./schemas/user");
+const { authentication } = require("./middlewares/authentication");
 
 const server = new ApolloServer({
   typeDefs: [userTypeDefs],
   resolvers: [userResolvers],
   introspection: true,
+  formatError: (error) => {
+    console.error("GraphQL Error:", error);
+    return {
+      message: error.message,
+      locations: error.locations,
+    };
+  },
 });
 
 async function startServer() {
@@ -24,13 +32,12 @@ async function startServer() {
     await connect();
 
     const db = await getDB();
-    const ts = "hai";
 
     const { url } = await startStandaloneServer(server, {
       listen: { port: PORT },
-      context: async () => ({
+      context: async ({ req }) => ({
         db,
-        ts,
+        auth: async () => authentication(req, db),
       }),
     });
 
