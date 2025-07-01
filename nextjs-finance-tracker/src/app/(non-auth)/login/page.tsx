@@ -17,12 +17,12 @@ export default function Login() {
     setShowPassword(!showPassword);
   }
 
-  // const CheckCookies = Cookies.get("access_token");
-  // console.log(CheckCookies, "ini cookies access_token");
+  const CheckCookies = Cookies.get("access_token");
+  console.log(CheckCookies, "ini cookies access_token");
 
-  // if (CheckCookies) {
-  //   navigate.push("/");
-  // }
+  if (CheckCookies) {
+    navigate.push("/");
+  }
 
   useEffect(() => {
     const checkCookies = Cookies.get("access_token");

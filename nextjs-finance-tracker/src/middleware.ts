@@ -11,7 +11,9 @@ export async function middleware(request: NextRequest) {
     // console.log(cookiesAuth, "ini cookiesAuth middleware");
 
     if (!cookiesAuth) {
-      throw new Error("Authorization token not found");
+      return NextResponse.redirect(new URL("/login", request.url), {
+        status: 307,
+      });
     }
 
     let token = cookiesAuth.value;

@@ -44,3 +44,31 @@ export interface TransactionModel {
   isDeleted: boolean;
   isDeletedByBudget: boolean;
 }
+
+export function formatRupiah(angka: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(angka);
+}
+
+export function formatId(id: string): string {
+  return id.match(/.{1,5}/g)?.join(" ") || id;
+}
+
+export const thisYear = new Date().getFullYear();
+export const thisMonth = new Date().toLocaleString("default", {
+  month: "long",
+});
+export const thisDate = new Date().toLocaleDateString("id-ID", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
+export const thisTime = new Date().toLocaleTimeString("id-ID", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+export const thisDateTime = `${thisDate} ${thisTime}`;
