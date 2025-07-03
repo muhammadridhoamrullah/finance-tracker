@@ -11,7 +11,6 @@ import { IoIosArrowUp } from "react-icons/io";
 export default function Navbar() {
   const path = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  console.log(dropdownOpen, "ini dropdownOpen");
 
   function toggleDropdown() {
     setDropdownOpen(!dropdownOpen);

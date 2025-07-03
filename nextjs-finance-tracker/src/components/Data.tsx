@@ -21,7 +21,6 @@ export default function Data() {
     totalMoney: 0,
     Budget: [],
   });
-  console.log(data, "ini data di Data");
 
   async function fetchData() {
     try {
