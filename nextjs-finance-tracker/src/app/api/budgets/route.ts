@@ -94,10 +94,6 @@ export async function GET(request: NextRequest) {
 
     const budget = await getMyBudgets(UserId);
 
-    if (budget.length === 0) {
-      throw new Error("There is no budget");
-    }
-
     return NextResponse.json(
       {
         data: budget,

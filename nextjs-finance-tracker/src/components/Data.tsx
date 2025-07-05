@@ -13,9 +13,11 @@ import {
   thisYear,
 } from "@/db/type/type";
 import { FiPlusCircle } from "react-icons/fi";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function Data() {
   const url = process.env.NEXT_PUBLIC_CLIENT_URL;
+  const [loading, setLoading] = useState(true);
 
   const [data, setData] = useState({
     totalMoney: 0,
@@ -24,22 +26,33 @@ export default function Data() {
 
   async function fetchData() {
     try {
+      setLoading(true);
       const response = await fetch(`${url}/api/budgets`, {
         method: "GET",
-
-        cache: "force-cache",
+        cache: "no-cache",
+        next: {
+          tags: ["fetch-budgets"],
+        },
       });
 
       const result = await response.json();
+      console.log(result, "result from budgets in Data component");
 
       if (!response.ok) {
         throw new Error(result.message);
       }
 
-      setData({
-        totalMoney: result.data[0].remaining,
-        Budget: result.data,
-      });
+      if (result.data.length === 0) {
+        setData({
+          totalMoney: 0,
+          Budget: [],
+        });
+      } else {
+        setData({
+          totalMoney: result.data[0].remaining,
+          Budget: result.data,
+        });
+      }
     } catch (error) {
       if (error instanceof Error) {
         Swal.fire({
@@ -54,6 +67,8 @@ export default function Data() {
           text: "Internal Server Error",
         });
       }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -65,41 +80,57 @@ export default function Data() {
     <div
       className={`${poppins.className} p-6 flex flex-col justify-between w-full h-full`}
     >
-      <div className=" text-2xl font-bold">Vibe$</div>
-
-      <div className="flex flex-col gap-2 bg-white text-blue-950 rounded-2xl p-4">
-        <div className="font-semibold">
-          Remaining Money - {thisMonth} {thisYear}
+      {loading ? (
+        <div className="w-full h-full flex justify-center items-center">
+          <AiOutlineLoading3Quarters className="text-4xl text-white animate-spin" />
         </div>
-        <div className="text-3xl font-bold">
-          {formatRupiah(data?.totalMoney)}
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className=" text-2xl font-bold">Vibe$</div>
 
-      <Link
-        href={"/budget"}
-        className="bg-green-700 p-3 rounded-md w-fit cursor-pointer hover:bg-green-900 text-xs"
-      >
-        Make a Payment
-      </Link>
+          <div className="flex flex-col gap-2 bg-white text-blue-950 rounded-2xl p-4">
+            <div className="font-semibold">
+              Remaining Money - {thisMonth} {thisYear}
+            </div>
+            {data?.Budget?.length > 0 ? (
+              <div className="text-3xl font-bold">
+                {formatRupiah(data?.totalMoney)}
+              </div>
+            ) : (
+              <div className="text-xs font-semibold">
+                There is no budget data on this month
+              </div>
+            )}
+          </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="text-lg font-semibold">Budget Data</div>
-        {data?.Budget?.length > 0 ? (
-          data.Budget.slice(0, 2).map((el: BudgetModel, i: number) => (
-            <CardBudgetData key={i} data={el} />
-          ))
-        ) : (
-          <div className="font-bold text-lg">There is no budget data</div>
-        )}
-        <Link
-          href={"/budget"}
-          className="w-full h-20 bg-transparent border border-white p-2 rounded-md flex items-center justify-center gap-2 cursor-pointer hover:bg-blue-800"
-        >
-          <FiPlusCircle className="text-xl text-white" />
-          <div className="text-sm">Add new Budget</div>
-        </Link>
-      </div>
+          <Link
+            href={"/budget"}
+            className="bg-green-700 p-3 rounded-md w-fit cursor-pointer hover:bg-green-900 text-xs"
+          >
+            Make a Payment
+          </Link>
+
+          <div className="flex flex-col gap-2">
+            <div className="text-lg font-semibold">Budget Data</div>
+            {data?.Budget?.length > 0 ? (
+              data.Budget.slice(0, 2).map((el: BudgetModel, i: number) => (
+                <CardBudgetData key={i} data={el} />
+              ))
+            ) : (
+              <div className="font-bold text-lg border border-white w-full h-40 rounded-md flex justify-center items-center">
+                There is no budget data
+              </div>
+            )}
+            <Link
+              href={"/budget"}
+              className="w-full h-20 bg-transparent border border-white p-2 rounded-md flex items-center justify-center gap-2 cursor-pointer hover:bg-blue-800"
+            >
+              <FiPlusCircle className="text-xl text-white" />
+              <div className="text-sm">Add new Budget</div>
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

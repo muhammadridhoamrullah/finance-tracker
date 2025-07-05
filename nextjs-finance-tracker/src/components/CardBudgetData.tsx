@@ -11,7 +11,7 @@ export default function CardBudgetData({ data }: props) {
       <div className="uppercase font-semibold">
         {data.name} {thisYear}
       </div>
-      <div className="text-white/50">{formatId(data._id)}</div>
+      <div className="text-white/50">{formatId(data._id.toUpperCase())}</div>
       <div className="font-semibold flex w-full justify-between items-center">
         {formatRupiah(data.amount)}
         <FaCcMastercard className="text-xl" />

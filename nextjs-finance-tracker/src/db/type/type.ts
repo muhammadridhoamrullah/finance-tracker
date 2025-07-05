@@ -61,14 +61,21 @@ export const thisYear = new Date().getFullYear();
 export const thisMonth = new Date().toLocaleString("default", {
   month: "long",
 });
-export const thisDate = new Date().toLocaleDateString("id-ID", {
-  day: "2-digit",
-  month: "long",
-  year: "numeric",
-});
 
-export const thisTime = new Date().toLocaleTimeString("id-ID", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
+export function thisDate(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return dateObj.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function thisTime(date: string): string {
+  const dateObj = new Date(date);
+  return dateObj.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 export const thisDateTime = `${thisDate} ${thisTime}`;
