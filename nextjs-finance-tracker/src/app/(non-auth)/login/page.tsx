@@ -8,10 +8,12 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { z } from "zod";
 const Cookies = require("js-cookie");
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function Login() {
   const navigate = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function handleShowPassword() {
     setShowPassword(!showPassword);
@@ -51,6 +53,7 @@ export default function Login() {
     e.preventDefault();
 
     try {
+      setLoading(true);
       const response = await fetch("http://localhost:3000/api/users/login", {
         method: "POST",
         headers: {
@@ -100,8 +103,11 @@ export default function Login() {
           text: "Internal Server Error",
         });
       }
+    } finally {
+      setLoading(false);
     }
   }
+
   return (
     <form
       onSubmit={submitHandler}
@@ -165,7 +171,13 @@ export default function Login() {
                 type="submit"
                 className="bg-blue-800 h-12 hover:bg-blue-600 rounded-md font-semibold transition duration-300 ease-in-out text-xs cursor-pointer"
               >
-                SIGN IN
+                {loading ? (
+                  <div className="flex justify-center items-center ">
+                    <AiOutlineLoading3Quarters className="text-white animate-spin text-lg" />
+                  </div>
+                ) : (
+                  "LOG IN"
+                )}
               </button>
               <div className="text-xs">
                 Dont have an account?{" "}
