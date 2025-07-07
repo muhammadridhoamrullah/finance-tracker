@@ -3,11 +3,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { EyeOff, EyeIcon } from "lucide-react";
 import instance from "../axiosInstance";
 import Swal from "sweetalert2";
+import { useDispatch, useSelector } from "react-redux";
+import { doRegister } from "../store/registerSlice";
+import { useEffect } from "react";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function Register() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [hidePassword, setHidePassword] = useState(false);
-  const [formLogin, setFormLogin] = useState({
+  const { loading, data, error, isRegistered } = useSelector(
+    (state) => state.register
+  );
+  const [formRegister, setFormRegister] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -19,36 +27,41 @@ export default function Register() {
   function changeHandler(e) {
     const { name, value } = e.target;
 
-    setFormLogin({
-      ...formLogin,
+    setFormRegister({
+      ...formRegister,
       [name]: value,
     });
   }
 
   async function submitHandler(e) {
     e.preventDefault();
-    try {
-      const response = await instance.post("/register", formLogin);
-
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Registration successful!",
-      });
-
-      navigate("/login");
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.response.data.message,
-      });
-    }
+    dispatch(doRegister(formRegister));
   }
 
   async function togglePassword() {
     setHidePassword(!hidePassword);
   }
+
+  useEffect(() => {
+    if (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Registration Failed",
+        text: error,
+      });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (isRegistered) {
+      Swal.fire({
+        icon: "success",
+        title: "Registration Successful",
+        text: "You can now log in with your account.",
+      });
+      navigate("/login");
+    }
+  }, [isRegistered]);
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-black">
@@ -72,7 +85,7 @@ export default function Register() {
                   name="firstName"
                   id="firstName"
                   onChange={changeHandler}
-                  value={formLogin.firstName}
+                  value={formRegister.firstName}
                   className="w-36 h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -83,7 +96,7 @@ export default function Register() {
                   name="lastName"
                   id="lastName"
                   onChange={changeHandler}
-                  value={formLogin.lastName}
+                  value={formRegister.lastName}
                   className="w-36 h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -95,7 +108,7 @@ export default function Register() {
                 name="email"
                 id="email"
                 onChange={changeHandler}
-                value={formLogin.email}
+                value={formRegister.email}
                 className="w-full h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -107,7 +120,7 @@ export default function Register() {
                   name="password"
                   id="password"
                   onChange={changeHandler}
-                  value={formLogin.password}
+                  value={formRegister.password}
                   className="w-full h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
                 />
                 <button
@@ -126,7 +139,7 @@ export default function Register() {
                 name="phoneNumber"
                 id="phoneNumber"
                 onChange={changeHandler}
-                value={formLogin.phoneNumber}
+                value={formRegister.phoneNumber}
                 className="w-full h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -137,7 +150,7 @@ export default function Register() {
                 name="address"
                 id="address"
                 onChange={changeHandler}
-                value={formLogin.address}
+                value={formRegister.address}
                 className="w-full h-10 p-2 border border-white rounded-lg text-xs bg-transparent focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -145,7 +158,13 @@ export default function Register() {
               type="submit"
               className="bg-blue-900 h-10 rounded-lg hover:bg-blue-700 cursor-pointer"
             >
-              SUBMIT
+              {loading ? (
+                <div className="flex justify-center items-center">
+                  <AiOutlineLoading3Quarters className="text-lg animate-spin" />
+                </div>
+              ) : (
+                <div className="font-bold">SUBMIT</div>
+              )}
             </button>
             <div className="text-xs font-extralight">
               Already have an account?{" "}

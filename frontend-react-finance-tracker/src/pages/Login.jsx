@@ -3,14 +3,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { EyeOff, EyeIcon } from "lucide-react";
 import instance from "../axiosInstance";
 import Swal from "sweetalert2";
+import { useDispatch, useSelector } from "react-redux";
+import { doLogin } from "../store/loginSlice";
+import { useEffect } from "react";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function Login() {
   const navigate = useNavigate();
   const [hidePassword, setHidePassword] = useState(false);
+  const { loading, data, error, isLogin } = useSelector((state) => state.login);
+
   const [formLogin, setFormLogin] = useState({
     email: "",
     password: "",
   });
+
+  const dispatch = useDispatch();
 
   function changeHandler(e) {
     const { name, value } = e.target;
@@ -23,24 +31,29 @@ export default function Login() {
 
   async function submitHandler(e) {
     e.preventDefault();
-    try {
-      const response = await instance.post("/login", formLogin);
 
-      localStorage.access_token = response.data.access_token;
-
-      navigate("/home");
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.response.data.message,
-      });
-    }
+    dispatch(doLogin(formLogin));
   }
 
   async function togglePassword() {
     setHidePassword(!hidePassword);
   }
+
+  useEffect(() => {
+    if (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: error,
+      });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (isLogin) {
+      navigate("/home");
+    }
+  }, [isLogin]);
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-black">
@@ -93,7 +106,13 @@ export default function Login() {
               type="submit"
               className="bg-blue-900 h-10 rounded-lg hover:bg-blue-700 cursor-pointer"
             >
-              SUBMIT
+              {loading ? (
+                <div className="flex justify-center items-center">
+                  <AiOutlineLoading3Quarters className="animate-spin text-lg" />
+                </div>
+              ) : (
+                <div className="font-bold">LOG IN</div>
+              )}
             </button>
             <div className="text-xs font-extralight">
               Dont have an account?{" "}

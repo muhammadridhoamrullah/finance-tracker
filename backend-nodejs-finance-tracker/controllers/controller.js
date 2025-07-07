@@ -1461,8 +1461,6 @@ class Controller {
 
       const getMyProfileFromRedis = await redis.get(`user:${UserId}`);
 
-      console.log(getMyProfileFromRedis, "<<< getMyProfileFromRedis <<<");
-
       if (getMyProfileFromRedis) {
         const profile = JSON.parse(getMyProfileFromRedis);
 
