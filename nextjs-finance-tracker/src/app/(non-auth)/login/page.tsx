@@ -14,17 +14,11 @@ export default function Login() {
   const navigate = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  console.log("Login Page Rendered");
 
   function handleShowPassword() {
     setShowPassword(!showPassword);
   }
-
-  // const CheckCookies = Cookies.get("access_token");
-  // console.log(CheckCookies, "ini cookies access_token");
-
-  // if (CheckCookies) {
-  //   navigate.push("/");
-  // }
 
   useEffect(() => {
     const checkCookies = Cookies.get("access_token");

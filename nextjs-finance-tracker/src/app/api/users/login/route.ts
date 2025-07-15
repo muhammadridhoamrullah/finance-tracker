@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const access_token = await loginUser(data);
+    console.log("Access Token:", access_token);
 
     return NextResponse.json(
       {

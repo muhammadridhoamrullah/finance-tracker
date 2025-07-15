@@ -21,7 +21,9 @@ import {
 import Link from "next/link";
 
 export default function Home() {
-  const url = process.env.NEXT_PUBLIC_CLIENT_URL;
+  // const url = process.env.NEXT_PUBLIC_CLIENT_URL;
+  const url = "http://localhost:3000";
+
   const [data, setData] = useState({
     totalBudget: 0,
     totalIncome: 0,

@@ -16,7 +16,8 @@ import { FiPlusCircle } from "react-icons/fi";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 export default function Data() {
-  const url = process.env.NEXT_PUBLIC_CLIENT_URL;
+  // const url = process.env.NEXT_PUBLIC_CLIENT_URL;
+  const url = "http://localhost:3000";
   const [loading, setLoading] = useState(true);
 
   const [data, setData] = useState({
@@ -36,7 +37,6 @@ export default function Data() {
       });
 
       const result = await response.json();
-      console.log(result, "result from budgets in Data component");
 
       if (!response.ok) {
         throw new Error(result.message);
