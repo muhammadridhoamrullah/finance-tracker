@@ -27,6 +27,8 @@ export interface BudgetModel {
   updatedAt: Date;
   deletedAt: Date | null;
   isDeleted: boolean;
+  User: UserModel;
+  transactions: TransactionModel[];
 }
 
 export interface TransactionModel {
@@ -65,7 +67,6 @@ export const thisMonth = new Date().toLocaleString("default", {
 export function thisDate(date: Date | string): string {
   const dateObj = typeof date === "string" ? new Date(date) : date;
   return dateObj.toLocaleDateString("id-ID", {
-    day: "2-digit",
     month: "long",
     year: "numeric",
   });

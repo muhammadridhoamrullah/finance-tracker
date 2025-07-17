@@ -41,9 +41,7 @@ export async function getMyBudgets(UserId: string) {
     {
       $match: {
         UserId: new ObjectId(UserId),
-        isDeleted: {
-          $ne: true,
-        },
+        isDeleted: { $ne: true },
       },
     },
     {
@@ -61,11 +59,20 @@ export async function getMyBudgets(UserId: string) {
       },
     },
     {
+      $lookup: {
+        from: "transactions", // koleksi transaksi
+        localField: "_id", // _id budget
+        foreignField: "BudgetId", // referensi dari transaksi
+        as: "transactions", // hasil disimpan di sini
+      },
+    },
+    {
       $project: {
         "User.password": 0,
       },
     },
   ];
+
   const budgets = await db.collection(COLLECTION_NAME).aggregate(agg).toArray();
 
   return budgets;
