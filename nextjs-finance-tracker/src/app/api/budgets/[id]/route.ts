@@ -15,7 +15,13 @@ import { inflateSync } from "zlib";
 import { BudgetModel } from "@/db/type/type";
 import { checkAuthorization } from "@/db/utils/authorization";
 
-export async function GET(request: NextRequest) {
+interface Props {
+  params: {
+    id: string;
+  };
+}
+
+export async function GET(request: NextRequest, { params }: Props) {
   try {
     // Ambil UserId dari header
 
@@ -27,7 +33,7 @@ export async function GET(request: NextRequest) {
       throw new Error("UserId not found");
     }
 
-    const BudgetId = request.nextUrl.pathname.split("/").pop();
+    const BudgetId = params.id;
 
     if (!BudgetId) {
       throw new Error("BudgetId not found");

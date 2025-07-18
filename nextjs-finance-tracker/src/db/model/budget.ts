@@ -106,6 +106,14 @@ export async function getMyBudgetById(BudgetId: string) {
       },
     },
     {
+      $lookup: {
+        from: "transactions", // koleksi transaksi
+        localField: "_id", // _id budget
+        foreignField: "BudgetId", // referensi dari transaksi
+        as: "transactions", // hasil disimpan di sini
+      },
+    },
+    {
       $project: {
         "User.password": 0,
       },

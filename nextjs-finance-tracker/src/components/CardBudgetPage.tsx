@@ -26,7 +26,7 @@ export default function CardBudgetPage({ data }: props) {
       </div>
       <Link
         className="bg-green-700 p-2 text-center rounded-md  hover:bg-green-900 text-xs"
-        href={`/budgets/${data._id}`}
+        href={`/budget/${data._id}`}
       >
         DETAIL
       </Link>

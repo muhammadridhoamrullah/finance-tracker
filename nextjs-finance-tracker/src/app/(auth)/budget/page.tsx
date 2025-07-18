@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import Loading from "./loading";
 import CardBudgetPage from "@/components/CardBudgetPage";
+import Link from "next/link";
 
 // https://cdn.dribbble.com/userupload/31845706/file/original-4e314bc66c789b2a868ce18f922dc7f7.png?resize=1024x768&vertical=center
 
@@ -352,11 +353,19 @@ export default function Budget() {
     <div
       className={`${poppins.className} bg-[#F4F6FA] w-full min-h-screen p-8 text-black flex flex-col gap-4 items-start`}
     >
-      <div className="flex flex-col gap-2">
-        <div className="text-5xl font-semibold text-blue-950">Budget Hub</div>
-        <div className="text-sm font-semibold text-gray-500">
-          Track your money moves. All in one place. Easy peasy. 🧠💰
+      <div className=" w-full flex justify-between items-center">
+        <div className="flex flex-col gap-2">
+          <div className="text-5xl font-semibold text-blue-950">Budget Hub</div>
+          <div className="text-sm font-semibold text-gray-500">
+            Track your money moves. All in one place. Easy peasy. 🧠💰
+          </div>
         </div>
+        <Link
+          className="bg-green-700 text-white p-2 rounded-md text-xs hover:bg-green-900 transition-all duration-300"
+          href={"/create-budget"}
+        >
+          Create Budget
+        </Link>
       </div>
       <div className="bg-blue-950 w-full h-36 p-4 text-white flex flex-col justify-between rounded-2xl">
         <div className="flex flex-col gap-1">
