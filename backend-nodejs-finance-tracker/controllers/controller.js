@@ -1459,15 +1459,15 @@ class Controller {
     try {
       const UserId = req.user.id;
 
-      const getMyProfileFromRedis = await redis.get(`user:${UserId}`);
+      // const getMyProfileFromRedis = await redis.get(`user:${UserId}`);
 
-      if (getMyProfileFromRedis) {
-        const profile = JSON.parse(getMyProfileFromRedis);
+      // if (getMyProfileFromRedis) {
+      //   const profile = JSON.parse(getMyProfileFromRedis);
 
-        return res.status(200).json({
-          profile,
-        });
-      }
+      //   return res.status(200).json({
+      //     profile,
+      //   });
+      // }
 
       const getProfile = await User.findByPk(UserId, {
         attributes: {
@@ -1496,7 +1496,7 @@ class Controller {
       }
 
       // Simpan ke Redis
-      await redis.set(`user:${UserId}`, JSON.stringify(getProfile));
+      // await redis.set(`user:${UserId}`, JSON.stringify(getProfile));
 
       res.status(200).json({
         profile: getProfile,

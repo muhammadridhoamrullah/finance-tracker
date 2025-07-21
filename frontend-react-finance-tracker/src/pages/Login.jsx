@@ -12,7 +12,6 @@ export default function Login() {
   const navigate = useNavigate();
   const [hidePassword, setHidePassword] = useState(false);
   const { loading, data, error, isLogin } = useSelector((state) => state.login);
-  console.log("Login State:", { loading, data, error, isLogin });
 
   const [formLogin, setFormLogin] = useState({
     email: "",

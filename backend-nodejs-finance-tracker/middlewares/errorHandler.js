@@ -101,6 +101,8 @@ async function errorHandling(err, req, res, next) {
       message:
         "Month must be between 1 and 12, and Year must be a valid number",
     });
+  } else if (err.name === "JsonWebTokenError") {
+    res.status(401).json({ message: "Invalid token" });
   }
 }
 

@@ -36,7 +36,6 @@ export function doRegister(data) {
     try {
       dispatch(registerRequest());
       const response = await instance.post("/register", data);
-      console.log(response, "Response from register");
 
       dispatch(registerSuccess(response.data));
     } catch (error) {
