@@ -24,6 +24,7 @@ interface Props {
 export async function GET(request: NextRequest, { params }: Props) {
   try {
     // Ambil UserId dari header
+    const { id } = await params;
 
     const headerList = headers();
 
@@ -33,16 +34,19 @@ export async function GET(request: NextRequest, { params }: Props) {
       throw new Error("UserId not found");
     }
 
-    const BudgetId = params.id;
+    const BudgetId = id;
 
     if (!BudgetId) {
       throw new Error("BudgetId not found");
     }
 
     // Ambil budget berdasarkan BudgetId dan UserId
-    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel[];
+    const findBudget = (await getMyBudgetById(BudgetId)) as BudgetModel;
 
-    if (findBudget.length === 0) {
+    // if (findBudget.length === 0) {
+    //   throw new Error("Budget not found");
+    // }
+    if (!findBudget) {
       throw new Error("Budget not found");
     }
 

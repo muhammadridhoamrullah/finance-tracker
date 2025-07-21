@@ -123,7 +123,7 @@ export async function getMyBudgetById(BudgetId: string) {
   const findMyBudget = await db
     .collection(COLLECTION_NAME)
     .aggregate(agg)
-    .toArray();
+    .next();
 
   return findMyBudget;
 }

@@ -66,7 +66,7 @@ export const thisMonth = new Date().toLocaleString("default", {
 
 export function thisDate(date: Date | string): string {
   const dateObj = typeof date === "string" ? new Date(date) : date;
-  return dateObj.toLocaleDateString("id-ID", {
+  return dateObj.toLocaleDateString("en-EN", {
     month: "long",
     year: "numeric",
   });
@@ -80,3 +80,20 @@ export function thisTime(date: string): string {
   });
 }
 export const thisDateTime = `${thisDate} ${thisTime}`;
+
+export function formatMonthDay(date: Date): string {
+  const dateObj = new Date(date);
+  const month = dateObj.toLocaleString("en-US", { month: "short" });
+  const day = dateObj.getDate();
+
+  return `${month}, ${day}`;
+}
+
+export function formatMonthDayYear(date: Date): string {
+  const dateObj = new Date(date);
+  const month = dateObj.toLocaleString("en-US", { month: "short" });
+  const day = dateObj.getDate();
+  const year = dateObj.getFullYear();
+
+  return `${month} ${day}, ${year}`;
+}
